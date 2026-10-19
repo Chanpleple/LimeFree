@@ -40,22 +40,35 @@ button:active{transform:scale(.975)}button:disabled{opacity:.4}
  box-shadow:0 10px 26px -14px var(--lime)}
 .big{padding:18px;font-size:16px}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:9px}
-.row{display:flex;gap:9px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:9px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-top:9px}
+.row{display:flex;gap:9px;align-items:center}
 input{flex:1;min-width:0;background:#0e1211;border:1px solid var(--line);color:var(--fg);
  border-radius:13px;padding:14px;font:inherit}
 input::placeholder{color:#5d6865}
-.row button{width:auto;padding-left:22px;padding-right:22px}
+.row button{width:auto;padding-left:18px;padding-right:18px}
 .hint{font-size:12px;color:var(--dim);margin:10px 0 0}.hint b{color:#a9b6b1}
 .stats{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:10px}
 .stat{background:#0e1211;border:1px solid var(--line);border-radius:13px;padding:10px 13px}
 .stat u{display:block;text-decoration:none;font-size:10px;letter-spacing:.1em;
  text-transform:uppercase;color:var(--dim);margin-bottom:2px}
-.stat b{font-size:16px}
+.stat b{font-size:16px;font-variant-numeric:tabular-nums}
 #log{font:11px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre-wrap;
  word-break:break-all;max-height:200px;overflow:auto;color:#9fb0aa}
 #log b{color:var(--lime)}#log i{color:#ffc247;font-style:normal}
 #cam{margin-bottom:10px}#cam video{width:100%;border-radius:13px;display:block}
 .hide{display:none}
+/* ---- tuning UI ---- */
+.ttl{font-size:10px;letter-spacing:.11em;text-transform:uppercase;color:var(--dim);margin:0}
+.chip{padding:12px 0;font-size:13px}
+.chip.on{border-color:rgba(0,224,122,.5);color:var(--lime);background:rgba(0,224,122,.08)}
+#capV{min-width:58px;text-align:right;font-variant-numeric:tabular-nums;color:var(--lime);font-size:13px}
+input[type=range]{-webkit-appearance:none;appearance:none;border:0;background:transparent;height:28px;padding:0}
+input[type=range]::-webkit-slider-runnable-track{height:4px;background:#1c2220;border-radius:9px}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;
+ background:var(--lime);margin-top:-9px;box-shadow:0 0 12px rgba(0,224,122,.5)}
+input[type=range]::-moz-range-track{height:4px;background:#1c2220;border-radius:9px}
+input[type=range]::-moz-range-thumb{width:22px;height:22px;border:0;border-radius:50%;background:var(--lime)}
 </style>
 </head>
 <body>
@@ -87,6 +100,60 @@ input::placeholder{color:#5d6865}
   </div>
   <div id="cam" class="hide"></div>
   <div class="stats" id="stats"></div>
+</section>
+
+<section class="card hide" id="tune">
+  <p class="ttl">Live</p>
+  <div class="stats">
+    <div class="stat"><u>Speed</u><b id="tSpeed">–</b></div>
+    <div class="stat"><u>Motor power</u><b id="tPow">–</b></div>
+    <div class="stat"><u>Battery</u><b id="tBatt">–</b></div>
+    <div class="stat"><u>Controller</u><b id="tTemp">–</b></div>
+  </div>
+
+  <p class="ttl" style="margin-top:16px">Speed cap</p>
+  <div class="row" style="margin-top:6px">
+    <input id="cap" type="range" min="10" max="35" step="1" value="25">
+    <span id="capV">25 km/h</span>
+  </div>
+  <div class="grid">
+    <button class="primary" id="capSet">Set cap</button>
+    <button id="capOff">Lift cap</button>
+  </div>
+
+  <p class="ttl" style="margin-top:16px">Ride mode</p>
+  <div class="grid3">
+    <button class="chip" data-mode="1">Eco</button>
+    <button class="chip" data-mode="0">Normal</button>
+    <button class="chip" data-mode="2">Sport</button>
+  </div>
+
+  <p class="ttl" style="margin-top:16px">Regen (KERS)</p>
+  <div class="grid4">
+    <button class="chip" data-kers="0">Off</button>
+    <button class="chip" data-kers="1">1</button>
+    <button class="chip" data-kers="2">2</button>
+    <button class="chip" data-kers="3">3</button>
+  </div>
+
+  <p class="ttl" style="margin-top:16px">Cruise control</p>
+  <div class="grid">
+    <button class="chip" data-cruise="1">On</button>
+    <button class="chip" data-cruise="0">Off</button>
+  </div>
+
+  <p class="ttl" style="margin-top:16px">Raw register</p>
+  <div class="row" style="margin-top:6px">
+    <input id="rReg" placeholder="reg" value="73" style="font-family:ui-monospace,Menlo,monospace;text-align:center">
+    <input id="rVal" placeholder="value" value="250" style="font-family:ui-monospace,Menlo,monospace;text-align:center">
+    <button id="rRead">R</button>
+    <button id="rWrite">W</button>
+  </div>
+  <div class="grid" style="margin-top:9px">
+    <button id="diag">Diagnose hardware</button>
+    <button id="reboot">Reboot scooter</button>
+  </div>
+  <p class="hint" id="diagOut">Reads ESC magic + firmware to confirm the register map applies to this scooter.</p>
 </section>
 
 <section class="card">
@@ -127,15 +194,72 @@ const SVC=['battery_service','device_information','generic_access','generic_attr
 let dev=null,wr=[],chars=[];
 const now=()=>Math.floor(Date.now()/1000);
 const AT=(d,p='')=>`AT+CMD,${p},${now()},0,${d}$`;
+// legacy guess frames — left exactly as they were, they are what makes unlock work
 const nb=(cmd,pl=[])=>{const f=[0x5A,0xA5,2+pl.length,0x20,cmd,...pl],
   s=f.reduce((a,b)=>a+b,0);f.push(s&255,(s>>8)&255);return f;};
 const OPEN=()=>[AT('{"type":"unlock"}'),AT('{"type":"unlock"}','0'),AT('{"cmd":"unlock"}'),
   AT('{"type":"unlock","state":1}'),nb(1,[1]),nb(2,[1]),nb(0x3D,[1])];
 const SHUT=()=>[AT('{"type":"lock"}'),nb(1,[0]),nb(2,[0]),nb(0x3D,[0])];
 
-async function send(b){
+/* ==================== NINEBOT REGISTER LAYER ==================== */
+// canonical frame: 5A A5 | len | src | dst | cmd | arg | payload[len] | ck lo | ck hi
+// ck = 0xFFFF - (sum of len,src,dst,cmd,arg,payload), little-endian
+const APP=0x3D,ESC=0x20,BLE=0x21,BMS=0x22;
+const frame=(cmd,arg=0,pl=[],src=APP,dst=ESC)=>{
+  const body=[src,dst,cmd,arg,...pl],len=pl.length;
+  const sum=[len,...body].reduce((a,b)=>a+b,0)&0xFFFF;
+  const ck=(0xFFFF-sum)&0xFFFF;
+  return [0x5A,0xA5,len,...body,ck&0xFF,ck>>8];
+};
+const readReg =(off,len=2,silent)=>send(frame(0x01,off,[len]),silent);
+const writeReg=(off,val,silent)=>send(frame(0x02,off,[val&0xFF,(val>>8)&0xFF]),silent);
+
+// promise-based read, so the UI can await a value instead of guessing
+const pending=new Map();
+function readRegA(off,len=2,timeout=1200){
+  return new Promise(res=>{
+    const to=setTimeout(()=>{pending.delete(off);res(null);},timeout);
+    pending.set(off,v=>{clearTimeout(to);pending.delete(off);res(v);});
+    readReg(off,len,true);
+  });
+}
+
+const TEL={0x22:['batt','%'],0x26:['speed','km/h'],0xBD:['pow','W'],0x3E:['temp','C']};
+const tel={};
+function drawTel(){
+  const f=(k,div,unit,dp)=>$('#'+k).textContent=tel[unit]===undefined?'–':(tel[unit]/div).toFixed(dp)+' '+unit;
+  $('#tSpeed').textContent = tel.speed===undefined?'–':(tel.speed/10).toFixed(1)+' km/h';
+  $('#tPow').textContent   = tel.pow  ===undefined?'–':tel.pow+' W';
+  $('#tBatt').textContent  = tel.batt ===undefined?'–':tel.batt+'%';
+  $('#tTemp').textContent  = tel.temp ===undefined?'–':(tel.temp/10).toFixed(0)+'°C';
+}
+function setCapUI(v){ if(v>50&&v<600){const k=Math.round(v/10);$('#cap').value=k;$('#capV').textContent=k+' km/h';} }
+
+// every inbound frame goes through here
+function parse(u){
+  if(u[0]!==0x5A||u[1]!==0xA5){log('rx',hex(u)+' &nbsp;'+asc(u));return;}
+  const cmd=u[5],arg=u[6],pl=[...u.slice(7,7+u[2])];
+  const v=pl.length>=2?((pl[0]|(pl[1]<<8))<<16>>16):(pl[0]||0);
+  const t=TEL[arg];
+  if(t&&cmd===0x04){ if(tel[t[0]]!==v){tel[t[0]]=v;drawTel();} }
+  else log('rx',hex(u)+' &nbsp;'+asc(u)+' &nbsp;reg 0x'+arg.toString(16).padStart(2,'0')+' = '+v);
+  if(pending.has(arg)){const f=pending.get(arg);pending.delete(arg);f(v);}
+  if(arg===0x73||arg===0xBC)setCapUI(v);
+}
+
+let poll=null,tick=0;
+function startPoll(){stopPoll();poll=setInterval(async()=>{
+  if(!dev||!dev.gatt.connected)return;
+  await readReg(0x26,2,true); await sleep(70);
+  await readReg(0xBD,2,true);
+  if(++tick%4===0){await sleep(70);await readReg(0x22,2,true);await sleep(70);await readReg(0x3E,2,true);}
+},700);}
+function stopPoll(){if(poll)clearInterval(poll);poll=null;}
+/* ================== END NINEBOT REGISTER LAYER ================== */
+
+async function send(b,silent){
   const d=typeof b=='string'?enc.encode(b):new Uint8Array(b);
-  log('tx',hex(d)+(typeof b=='string'?' &nbsp;'+b:''));
+  if(!silent)log('tx',hex(d)+(typeof b=='string'?' &nbsp;'+b:''));
   for(const c of wr){try{await (c.properties.writeWithoutResponse
     ? c.writeValueWithoutResponse(d):c.writeValue(d));}catch(e){}}
 }
@@ -147,7 +271,7 @@ $('#connect').onclick=async()=>{
     dev=await navigator.bluetooth.requestDevice({filters:[{namePrefix:'Lime'}],optionalServices:SVC});
   }catch(e){set('','offline');return;}
   $('#link').textContent=dev.name;
-  dev.addEventListener('gattserverdisconnected',()=>{set('','offline');log('','disconnected');});
+  dev.addEventListener('gattserverdisconnected',()=>{set('','offline');log('','disconnected');stopPoll();});
   try{
     const s=await dev.gatt.connect(),prim=await s.getPrimaryServices();
     wr=[];chars=[];
@@ -156,12 +280,14 @@ $('#connect').onclick=async()=>{
       if(c.properties.write||c.properties.writeWithoutResponse)wr.push(c);
       if(c.properties.notify||c.properties.indicate){
         try{await c.startNotifications();
-          c.addEventListener('characteristicvaluechanged',e=>
-            log('rx',hex(e.target.value.buffer)+' &nbsp;'+asc(e.target.value.buffer)));}catch(e){}
+          c.addEventListener('characteristicvaluechanged',e=>parse(new Uint8Array(e.target.value.buffer)));}catch(e){}
       }
     }
     log('','linked · '+prim.length+' services · '+wr.length+' writable');
-    set('on','connected');$('#panel').classList.remove('hide');beep(660);
+    set('on','connected');$('#panel').classList.remove('hide');$('#tune').classList.remove('hide');
+    beep(660);
+    readReg(0x73);await sleep(200);readReg(0x22);
+    startPoll();
   }catch(e){set('','error');log('','link failed: '+e.message);}
 };
 $('#pill').onclick=()=>{if(dev&&dev.gatt.connected)dev.gatt.disconnect();};
@@ -195,6 +321,43 @@ $('#scan').onclick=async()=>{
 $('#send').onclick=()=>{const h=$('#hex').value.replace(/[^0-9a-f]/gi,'');
   if(h.length%2)return;const a=[];for(let i=0;i<h.length;i+=2)a.push(parseInt(h.substr(i,2),16));send(a);};
 $('#clear').onclick=()=>$('#log').replaceChildren();
+
+/* ---------------- tuning wiring ---------------- */
+const cap=$('#cap');
+cap.oninput=()=>$('#capV').textContent=cap.value+' km/h';
+$('#capSet').onclick=async()=>{const k=+cap.value;set('busy','writing');
+  await writeReg(0x73,Math.round(k*10));await sleep(200);await readReg(0x73);
+  set('on','cap '+k);beep(880);};
+$('#capOff').onclick=async()=>{set('busy','writing');
+  await writeReg(0x72,1);await sleep(200);await readReg(0x72);set('on','cap lifted');beep(880);};
+
+document.querySelectorAll('.chip').forEach(b=>b.onclick=async()=>{
+  b.parentElement.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on');
+  if(b.dataset.mode   !==undefined)await writeReg(0x75,+b.dataset.mode);
+  if(b.dataset.kers   !==undefined)await writeReg(0x7B,+b.dataset.kers);
+  if(b.dataset.cruise !==undefined)await writeReg(0x7C,+b.dataset.cruise);
+  beep(880);
+});
+
+const rh=()=>parseInt($('#rReg').value.replace(/[^0-9a-f]/gi,''),16);
+$('#rRead').onclick =()=>{const r=rh();if(!isNaN(r))readReg(r);};
+$('#rWrite').onclick=()=>{const r=rh(),v=+$('#rVal').value;if(!isNaN(r)&&!isNaN(v))writeReg(r,v);};
+$('#reboot').onclick=()=>writeReg(0x78,1);
+
+$('#diag').onclick=async()=>{
+  const out=$('#diagOut');out.textContent='reading magic + firmware…';
+  const magic=await readRegA(0x00);
+  if(magic===null){out.innerHTML='<b>no reply</b> — not a Ninebot-family ESC, or the frames are landing on the wrong characteristic. The register map may not apply here.';return;}
+  const fw=await readRegA(0x1A);
+  const sn=await readRegA(0x10,14);
+  out.innerHTML='magic <b>0x'+(magic>>>0).toString(16).toUpperCase().padStart(4,'0')+'</b>'+
+    (magic===0x5C51?' ✓ Ninebot-family, register map applies':' (expected 5C51)')+
+    (fw!==null?' · ESC fw <b>'+fw+'</b>':'')+
+    (sn!==null?' · reg 0x10 = '+sn:'');
+};
+/* ---------------- end tuning wiring ---------------- */
+
 log('','ready — connect to begin');
 </script>
 </body>
