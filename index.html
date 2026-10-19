@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="LimeFree">
+<meta name="theme-color" content="#0b0d0c">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<title>LimeFree</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{--bg:#0b0d0c;--line:#232a28;--fg:#eef3f0;--dim:#7f8b87;--lime:#00e07a;--lime2:#00b862}
+body{margin:0;background:var(--bg);color:var(--fg);overflow-x:hidden;
+ padding:max(16px,env(safe-area-inset-top)) 16px calc(40px + env(safe-area-inset-bottom));
+ font:15px/1.45 -apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif}
+body::before{content:"";position:fixed;inset:-30% -20% auto;height:62vh;pointer-events:none;z-index:0;
+ background:radial-gradient(58% 58% at 50% 0%,rgba(0,224,122,.17),transparent 70%)}
+.wrap{position:relative;z-index:1;max-width:520px;margin:0 auto}
+header{display:flex;align-items:center;gap:12px;margin:4px 0 20px}
+.logo{width:40px;height:40px;flex:0 0 40px;filter:drop-shadow(0 0 14px rgba(0,224,122,.35))}
+h1{font-size:20px;margin:0;letter-spacing:-.4px}h1 b{color:var(--lime)}
+.sub{margin:2px 0 0;font-size:12px;color:var(--dim)}
+.pill{margin-left:auto;display:flex;align-items:center;gap:7px;font-size:10px;font-weight:600;
+ text-transform:uppercase;letter-spacing:.09em;color:var(--dim);background:#121615;
+ border:1px solid var(--line);border-radius:999px;padding:8px 12px;transition:.25s}
+.pill i{width:7px;height:7px;border-radius:50%;background:var(--dim);transition:.25s}
+.pill.on{color:var(--lime);border-color:rgba(0,224,122,.35)}
+.pill.on i{background:var(--lime);animation:pulse 1.8s infinite}
+.pill.busy i{background:#ffc247;animation:pulse .9s infinite}
+.pill.tap{cursor:pointer}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(0,224,122,.55)}70%{box-shadow:0 0 0 9px rgba(0,224,122,0)}100%{box-shadow:0 0 0 0 rgba(0,224,122,0)}}
+.card{background:linear-gradient(180deg,#161a19,#121514);border:1px solid var(--line);
+ border-radius:18px;padding:15px;margin-bottom:13px;box-shadow:0 14px 34px -24px #000}
+button{font:inherit;font-weight:600;border:0;border-radius:13px;padding:14px;width:100%;
+ background:#1c2220;color:var(--fg);cursor:pointer;transition:transform .12s,opacity .2s}
+button:active{transform:scale(.975)}button:disabled{opacity:.4}
+.primary{background:linear-gradient(180deg,var(--lime),var(--lime2));color:#04140c;
+ box-shadow:0 10px 26px -14px var(--lime)}
+.big{padding:18px;font-size:16px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:9px}
+.row{display:flex;gap:9px}
+input{flex:1;min-width:0;background:#0e1211;border:1px solid var(--line);color:var(--fg);
+ border-radius:13px;padding:14px;font:inherit}
+input::placeholder{color:#5d6865}
+.row button{width:auto;padding-left:22px;padding-right:22px}
+.hint{font-size:12px;color:var(--dim);margin:10px 0 0}.hint b{color:#a9b6b1}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:10px}
+.stat{background:#0e1211;border:1px solid var(--line);border-radius:13px;padding:10px 13px}
+.stat u{display:block;text-decoration:none;font-size:10px;letter-spacing:.1em;
+ text-transform:uppercase;color:var(--dim);margin-bottom:2px}
+.stat b{font-size:16px}
+#log{font:11px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre-wrap;
+ word-break:break-all;max-height:200px;overflow:auto;color:#9fb0aa}
+#log b{color:var(--lime)}#log i{color:#ffc247;font-style:normal}
+#cam{margin-bottom:10px}#cam video{width:100%;border-radius:13px;display:block}
+.hide{display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <svg class="logo" viewBox="0 0 48 48" fill="none" stroke="#00e07a" stroke-width="2.6" stroke-linecap="round">
+    <circle cx="12" cy="34" r="6.5"/><circle cx="36" cy="34" r="6.5"/>
+    <path d="M12 34h16"/><path d="M28 34 34 18"/><path d="M30.5 18h7.5"/>
+  </svg>
+  <div><h1>Lime<b>Free</b></h1><p class="sub">Bluetooth key · no account</p></div>
+  <div class="pill" id="pill"><i></i><span id="pillTxt">offline</span></div>
+</header>
+
+<section class="card">
+  <button class="primary big" id="connect">Connect to a Lime scooter</button>
+  <p class="hint">Stand within a metre, then pick the device named <b>Lime-…</b>.</p>
+</section>
+
+<section class="card hide" id="panel">
+  <div class="row">
+    <input id="code" placeholder="Code under the QR">
+    <button class="primary" id="open">Open</button>
+  </div>
+  <div class="grid">
+    <button id="scan">Scan QR</button>
+    <button id="lock">Lock</button>
+    <button id="probe">Probe all</button>
+    <button id="read">Read info</button>
+  </div>
+  <div id="cam" class="hide"></div>
+  <div class="stats" id="stats"></div>
+</section>
+
+<section class="card">
+  <div class="row" style="margin-bottom:10px">
+    <input id="hex" placeholder="raw hex" style="font-family:ui-monospace,Menlo,monospace;font-size:13px">
+    <button id="send">Send</button>
+  </div>
+  <div id="log"></div>
+  <p class="hint" style="display:flex;justify-content:space-between">
+    <span id="link">no device</span><span id="clear" style="color:var(--lime)">clear</span>
+  </p>
+</section>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+<script>
+const $=s=>document.querySelector(s),enc=new TextEncoder();
+const hex=b=>[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('').toUpperCase();
+const asc=b=>[...new Uint8Array(b)].map(x=>x>31&&x<127?String.fromCharCode(x):'.').join('');
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+function log(k,m){const d=document.createElement('div');
+  if(k=='tx')d.innerHTML='<i>&raquo;</i> '+m; else if(k=='rx')d.innerHTML='<b>&laquo;</b> '+m;
+  else d.textContent=m; $('#log').prepend(d);}
+function set(s,t){$('#pill').className='pill'+(s=='on'?' on tap':s=='busy'?' busy':'');
+  $('#pillTxt').textContent=t;}
+const beep=f=>{const a=beep.a||(beep.a=new(window.AudioContext||webkitAudioContext)()),
+  o=a.createOscillator(),g=a.createGain();o.frequency.value=f;o.connect(g);g.connect(a.destination);
+  g.gain.setValueAtTime(.07,a.currentTime);g.gain.exponentialRampToValueAtTime(.001,a.currentTime+.13);
+  o.start();o.stop(a.currentTime+.14);};
+
+const SVC=['battery_service','device_information','generic_access','generic_attribute',
+ '0000fe95-0000-1000-8000-00805f9b34fb','6e400001-b5a3-f393-e0a9-e50e24dcca9e',
+ '0000fee7-0000-1000-8000-00805f9b34fb','0000fee0-0000-1000-8000-00805f9b34fb',
+ '0000fff0-0000-1000-8000-00805f9b34fb','0000ffe0-0000-1000-8000-00805f9b34fb',
+ '0000ff00-0000-1000-8000-00805f9b34fb','0000fff1-0000-1000-8000-00805f9b34fb',
+ '0000fff2-0000-1000-8000-00805f9b34fb','0000fff3-0000-1000-8000-00805f9b34fb'];
+
+let dev=null,wr=[],chars=[];
+const now=()=>Math.floor(Date.now()/1000);
+const AT=(d,p='')=>`AT+CMD,${p},${now()},0,${d}$`;
+const nb=(cmd,pl=[])=>{const f=[0x5A,0xA5,2+pl.length,0x20,cmd,...pl],
+  s=f.reduce((a,b)=>a+b,0);f.push(s&255,(s>>8)&255);return f;};
+const OPEN=()=>[AT('{"type":"unlock"}'),AT('{"type":"unlock"}','0'),AT('{"cmd":"unlock"}'),
+  AT('{"type":"unlock","state":1}'),nb(1,[1]),nb(2,[1]),nb(0x3D,[1])];
+const SHUT=()=>[AT('{"type":"lock"}'),nb(1,[0]),nb(2,[0]),nb(0x3D,[0])];
+
+async function send(b){
+  const d=typeof b=='string'?enc.encode(b):new Uint8Array(b);
+  log('tx',hex(d)+(typeof b=='string'?' &nbsp;'+b:''));
+  for(const c of wr){try{await (c.properties.writeWithoutResponse
+    ? c.writeValueWithoutResponse(d):c.writeValue(d));}catch(e){}}
+}
+async function fire(list){set('busy','sending');for(const f of list){await send(f);await sleep(400);}
+  set('on','sent');beep(920);}
+
+$('#connect').onclick=async()=>{
+  try{set('busy','picking');
+    dev=await navigator.bluetooth.requestDevice({filters:[{namePrefix:'Lime'}],optionalServices:SVC});
+  }catch(e){set('','offline');return;}
+  $('#link').textContent=dev.name;
+  dev.addEventListener('gattserverdisconnected',()=>{set('','offline');log('','disconnected');});
+  try{
+    const s=await dev.gatt.connect(),prim=await s.getPrimaryServices();
+    wr=[];chars=[];
+    for(const sv of prim)for(const c of await sv.getCharacteristics()){
+      chars.push(c);
+      if(c.properties.write||c.properties.writeWithoutResponse)wr.push(c);
+      if(c.properties.notify||c.properties.indicate){
+        try{await c.startNotifications();
+          c.addEventListener('characteristicvaluechanged',e=>
+            log('rx',hex(e.target.value.buffer)+' &nbsp;'+asc(e.target.value.buffer)));}catch(e){}
+      }
+    }
+    log('','linked · '+prim.length+' services · '+wr.length+' writable');
+    set('on','connected');$('#panel').classList.remove('hide');beep(660);
+  }catch(e){set('','error');log('','link failed: '+e.message);}
+};
+$('#pill').onclick=()=>{if(dev&&dev.gatt.connected)dev.gatt.disconnect();};
+$('#open').onclick=()=>{const c=$('#code').value.trim().toUpperCase();
+  fire(c?[AT('{"type":"unlock","code":"'+c+'"}'),...OPEN()]:OPEN());};
+$('#lock').onclick=()=>fire(SHUT());
+$('#probe').onclick=()=>fire([...OPEN(),...SHUT()]);
+$('#read').onclick=async()=>{let html='';
+  for(const c of chars){if(!c.properties.read)continue;
+    try{const v=await c.readValue();
+      if(c.uuid.startsWith('00002a19'))html+=`<div class="stat"><u>Battery</u><b>${v.getUint8(0)}%</b></div>`;
+      if(c.uuid.startsWith('00002a26'))html+=`<div class="stat"><u>Firmware</u><b>${asc(v.buffer)}</b></div>`;
+      if(c.uuid.startsWith('00002a25'))html+=`<div class="stat"><u>Serial</u><b>${asc(v.buffer)}</b></div>`;
+      log('',c.uuid.slice(4,8)+' = '+hex(v.buffer)+' &nbsp;'+asc(v.buffer));
+    }catch(e){}}
+  if(html)$('#stats').innerHTML=html;};
+$('#scan').onclick=async()=>{
+  const st=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
+  const v=document.createElement('video');v.playsInline=v.autoplay=true;v.srcObject=st;
+  $('#cam').replaceChildren(v);$('#cam').classList.remove('hide');
+  const cv=document.createElement('canvas'),cx=cv.getContext('2d');
+  (function tick(){
+    if(!v.videoWidth)return requestAnimationFrame(tick);
+    cv.width=v.videoWidth;cv.height=v.videoHeight;cx.drawImage(v,0,0);
+    const d=cx.getImageData(0,0,cv.width,cv.height),r=jsQR(d.data,d.width,d.height);
+    if(r){st.getTracks().forEach(t=>t.stop());$('#cam').classList.add('hide');
+      $('#code').value=r.data.split('/').filter(Boolean).pop().toUpperCase();
+      log('','QR → '+r.data);beep(1100);$('#open').click();}
+    else requestAnimationFrame(tick);
+  })();};
+$('#send').onclick=()=>{const h=$('#hex').value.replace(/[^0-9a-f]/gi,'');
+  if(h.length%2)return;const a=[];for(let i=0;i<h.length;i+=2)a.push(parseInt(h.substr(i,2),16));send(a);};
+$('#clear').onclick=()=>$('#log').replaceChildren();
+log('','ready — connect to begin');
+</script>
+</body>
+</html>
