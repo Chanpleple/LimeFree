@@ -92,10 +92,12 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
 <section class="card">
   <button class="primary big" id="connect">Connect to a Lime scooter</button>
   <p class="hint">Stand within a metre, then pick the device named <b>Lime-…</b>.</p>
-  <p class="hint hide" id="btWarn" style="color:#ffc247">No Web Bluetooth here. On iPhone open this page in <b>Bluefy</b> — Safari does not support it.</p>
+  <p class="hint hide" id="btWarn" style="color:#ffc247">No Web Bluetooth here. On iPhone open this page in <b>Bluefy</b>.</p>
   <label class="sw"><span>Unlock immediately on connect</span><input type="checkbox" id="autoOpen"></label>
   <label class="sw"><span>Show any Bluetooth device (bikes)</span><input type="checkbox" id="anyDev"></label>
-  <p class="hint" id="pairHint">If a PIN dialog appears, try <b>000000</b> or <b>123456</b>.</p>
+  <label class="sw"><span>Slow, gentle connect</span><input type="checkbox" id="gentle"></label>
+  <p class="hint" id="pairHint">If a PIN dialog appears, answer it <b>before</b> touching anything. Try
+    <b>000000</b>, <b>123456</b>, <b>111111</b>, <b>654321</b>, <b>999999</b>.</p>
 </section>
 
 <section class="card hide" id="idcard">
@@ -111,6 +113,9 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
   <div class="row">
     <input id="code" placeholder="Code under the QR">
     <button class="primary" id="open">Open</button>
+  </div>
+  <div class="row" style="margin-top:9px">
+    <input id="atPw" placeholder="AT password (leave blank if unsure)" style="font-size:13px">
   </div>
   <div class="grid">
     <button id="scan">Scan QR</button>
@@ -187,7 +192,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
 </section>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsQR@1.4.0/dist/jsQR.js"></script>
 <script>
 const $=s=>document.querySelector(s),enc=new TextEncoder();
 const hex=b=>[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('').toUpperCase();
@@ -214,18 +219,20 @@ const SVC=['battery_service','device_information','generic_access','generic_attr
  '0000feb0-0000-1000-8000-00805f9b34fb','0000fee3-0000-1000-8000-00805f9b34fb'];
 
 let dev=null,wr=[],chars=[],pipe=null,gotReply=false,wantConnected=false,retry=0,targetMode=0;
+let upAt=0,fastDrops=0,seq=0;
 
-const autoOpen=$('#autoOpen'),anyDev=$('#anyDev');
+const autoOpen=$('#autoOpen'),anyDev=$('#anyDev'),gentle=$('#gentle');
 autoOpen.checked=localStorage.getItem('lf_auto')==='1';
 anyDev.checked=localStorage.getItem('lf_any')==='1';
+gentle.checked=localStorage.getItem('lf_gentle')==='1';
 autoOpen.onchange=()=>localStorage.setItem('lf_auto',autoOpen.checked?'1':'0');
 anyDev.onchange=()=>localStorage.setItem('lf_any',anyDev.checked?'1':'0');
+gentle.onchange=()=>localStorage.setItem('lf_gentle',gentle.checked?'1':'0');
 
 const IOS=/iPad|iPhone|iPod/.test(navigator.userAgent)||
   (navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
 if(!navigator.bluetooth)$('#btWarn').classList.remove('hide');
-if(IOS)$('#pairHint').innerHTML=
-  'iOS may ask for a PIN — try <b>000000</b> or <b>123456</b>. Or bond it in <b>Settings &rarr; Bluetooth</b> first, then it never asks.';
+const slow=()=>IOS||gentle.checked;
 
 /* ============ framing ============ */
 const APP=0x3D,ESC=0x20;
@@ -238,24 +245,28 @@ const frame=(cmd,arg=0,pl=[],src=APP,dst=ESC)=>{
 const readReg =(off,len=2,silent)=>send(frame(0x01,off,[len]),silent);
 const writeReg=(off,val,silent)=>send(frame(0x02,off,[val&0xFF,(val>>8)&0xFF]),silent);
 const pending=new Map();
-function readRegA(off,len=2,timeout=1000){
+function readRegA(off,len=2,timeout=1200){
   return new Promise(res=>{const to=setTimeout(()=>{pending.delete(off);res(null);},timeout);
     pending.set(off,v=>{clearTimeout(to);pending.delete(off);res(v);});readReg(off,len,true);});
 }
 const now=()=>Math.floor(Date.now()/1000);
-const AT=(d,p='',term='$')=>`AT+CMD,${p},${now()},0,${d}${term}`;
+const atPw=()=>$('#atPw').value.trim();
+// AT+type,password,time,sequence,data$
+const AT=(d,p=null,term='$')=>`AT+CMD,${p===null?atPw():p},${now()},0,${d}${term}`;
 const j=o=>JSON.stringify(o);
 
 const OPEN=code=>{
+  seq=(seq+1)&0xFF;
   const L=[];
   if(code){
     L.push(AT(j({type:'unlock',code})));
     L.push(AT(j({type:'unlock',code}),'0'));
-    L.push(`AT+CMD,0,${now()},0,${j({type:'unlock',code})}$`);
-    L.push(`AT+CMD,0,${now()},0,${j({type:'unlock',code})}\r\n`);
+    L.push(`AT+CMD,${atPw()},${now()},${seq},${j({type:'unlock',code})}$`);
+    L.push(`AT+CMD,${atPw()},${now()},0,${j({type:'unlock',code})}\r\n`);
   }
   L.push(AT(j({type:'unlock'})));
   L.push(AT(j({type:'unlock'}),'0'));
+  L.push(`AT+CMD,${atPw()},${now()},${seq},${j({type:'unlock'})}$`);
   L.push(AT(j({cmd:'unlock'})));
   L.push(frame(0x02,0x71,[1,0]));
   L.push(frame(0x01,0x00,[2]));
@@ -264,25 +275,24 @@ const OPEN=code=>{
 const SHUT=()=>[AT(j({type:'lock'})),frame(0x02,0x70,[1,0])];
 
 /* ============ transport ============ */
-// write-with-response first: Chrome/CoreBluetooth then use the long-write procedure for >20 byte frames
 async function writeTo(c,d){
   if(c.properties.write){ await c.writeValue(d); return; }
-  for(let i=0;i<d.length;i+=20){ await c.writeValueWithoutResponse(d.slice(i,i+20)); await sleep(18); }
+  for(let i=0;i<d.length;i+=20){ await c.writeValueWithoutResponse(d.slice(i,i+20)); await sleep(20); }
 }
 function targets(){ return (targetMode===0?(pipe?[pipe]:wr):targetMode===1?(pipe?[pipe]:[]):wr); }
 async function send(b,silent){
   const d=typeof b=='string'?enc.encode(b):new Uint8Array(b);
   if(!silent)log('tx',hex(d)+(typeof b=='string'?' &nbsp;'+b:'')+' <span style="opacity:.45">'+d.length+'B</span>');
   for(const c of targets()){
-    try{ await writeTo(c,d); }
+    try{ await writeTo(c,d); if(slow())await sleep(45); }
     catch(e){ if(!silent)log('','write failed '+c.uuid.slice(4,8)+': '+e.message); }
   }
 }
 async function fire(list,repeat=1){
   set('busy','sending');
   for(let r=0;r<repeat;r++){
-    for(const f of list){ await send(f); await sleep(330); }
-    if(r<repeat-1) await sleep(420);
+    for(const f of list){ await send(f); await sleep(slow()?480:330); }
+    if(r<repeat-1) await sleep(450);
   }
   set('on','sent');beep(920);
 }
@@ -310,17 +320,16 @@ function parse(u){
 
 /* ============ link ============ */
 let ka=null,wake=null;
-const startKA=()=>{stopKA();ka=setInterval(()=>{if(dev&&dev.gatt.connected)readReg(0x22,2,true);},IOS?1100:1800);};
+const startKA=()=>{stopKA();ka=setInterval(()=>{if(dev&&dev.gatt.connected)readReg(0x22,2,true);},slow()?1400:1800);};
 const stopKA=()=>{if(ka)clearInterval(ka);ka=null;};
 async function keepAwake(){
   if(!('wakeLock' in navigator))return;
-  try{ wake=await navigator.wakeLock.request('screen'); log('','screen wake lock on'); }
-  catch(e){ log('','wake lock refused: '+e.message); }
+  try{ wake=await navigator.wakeLock.request('screen'); }catch(e){}
 }
 document.addEventListener('visibilitychange',()=>{
   if(document.visibilityState!=='visible')return;
   keepAwake();
-  if(dev&&wantConnected&&!dev.gatt.connected){ retry=0; log('','foregrounded — reconnecting'); link(false); }
+  if(dev&&wantConnected&&!dev.gatt.connected){ retry=0; fastDrops=0; link(false); }
 });
 
 async function pickDevice(){
@@ -340,11 +349,15 @@ async function enumerate(s){
     if(c.properties.write||c.properties.writeWithoutResponse)wr.push(c);
     if(c.properties.notify||c.properties.indicate)subs.push(c);
   }
-  await Promise.allSettled(subs.map(async c=>{
-    try{ await c.startNotifications();
-      c.addEventListener('characteristicvaluechanged',e=>parse(new Uint8Array(e.target.value.buffer)));
-    }catch(e){}
-  }));
+  const bind=c=>c.addEventListener('characteristicvaluechanged',
+    e=>parse(new Uint8Array(e.target.value.buffer)));
+  if(slow()){
+    for(const c of subs){ try{ await c.startNotifications(); bind(c); await sleep(60); }catch(e){} }
+  }else{
+    await Promise.allSettled(subs.map(async c=>{
+      try{ await c.startNotifications(); bind(c); }catch(e){}
+    }));
+  }
   log('','linked · '+prim.length+' svc · '+wr.length+' writable · '+subs.length+' notify');
 }
 
@@ -355,7 +368,7 @@ async function identify(){
   for(const c of cand.slice(0,6)){
     gotReply=false;
     try{ await writeTo(c,new Uint8Array(frame(0x01,0x00,[2]))); }catch(e){ continue; }
-    await sleep(260);
+    await sleep(slow()?380:260);
     if(gotReply){ pipe=c; log('','pipe → '+c.uuid.slice(4,8)); return; }
   }
   log('','no reply to probes — frames go to all writable');
@@ -364,19 +377,22 @@ async function identify(){
 async function link(initial){
   try{
     const s=await dev.gatt.connect();
+    upAt=Date.now();
+    if(slow()){ set('busy','settling'); await sleep(1400); }
     await enumerate(s);
     retry=0; wantConnected=true;
     set('on','connected'); beep(660);
     $('#panel').classList.remove('hide'); $('#idcard').classList.remove('hide'); $('#tune').classList.remove('hide');
     startKA(); keepAwake();
+    if(slow())await sleep(300);
     harvest();
     if(!pipe) await identify();
-    if(autoOpen.checked) setTimeout(()=>$('#open').click(),400);
+    if(autoOpen.checked) setTimeout(()=>$('#open').click(),500);
     return true;
   }catch(e){
     log('','link failed: '+e.message);
     if(/auth|encrypt|insufficient|pair/i.test(e.message))
-      log('','→ pairing needed. Try PIN 000000 or 123456 in the system dialog.');
+      log('','→ pairing wanted. Answer the system PIN dialog, then tap Reconnect.');
     return false;
   }
 }
@@ -388,23 +404,29 @@ $('#connect').onclick=async()=>{
   catch(e){ set('','offline'); return; }
   $('#link').textContent=dev.name||'Lime scooter';
   dev.addEventListener('gattserverdisconnected',async()=>{
-    stopKA(); log('','disconnected');
+    stopKA();
+    const dur=Date.now()-upAt;
+    if(dur<2500)fastDrops++; else fastDrops=0;
+    log('','disconnected'+(fastDrops>1?(' (fast drop '+fastDrops+')'):''));
     if(!wantConnected){ set('','offline'); return; }
-    while(wantConnected&&retry<8){
-      retry++; set('busy','retry '+retry);
-      await sleep(300+retry*350);
-      log('','reconnect '+retry+'…');
+    if(fastDrops>=2) log('','→ if a PIN dialog is up, answer it. Or toggle Bluetooth off/on.');
+    while(wantConnected&&retry<10){
+      retry++;
+      const wait=Math.min(500*Math.pow(1.6,retry-1)+fastDrops*700,7000);
+      set('busy','retry '+retry);
+      await sleep(wait);
+      log('','reconnect '+retry+' after '+Math.round(wait)+'ms');
       if(await link(false)){ log('','back online'); return; }
     }
-    set('','offline'); log('','gave up after '+retry+' tries');
+    set('','offline'); log('','gave up — tap the pill to retry');
   });
   await link(true);
 };
 $('#pill').onclick=()=>{
   if(dev&&dev.gatt.connected){ wantConnected=false; stopKA(); dev.gatt.disconnect(); set('','offline'); }
-  else if(dev){ wantConnected=true; retry=0; link(false); }
+  else if(dev){ wantConnected=true; retry=0; fastDrops=0; link(false); }
 };
-$('#reconnect').onclick=()=>{ wantConnected=true; retry=0; link(false); };
+$('#reconnect').onclick=()=>{ wantConnected=true; retry=0; fastDrops=0; link(false); };
 
 /* ============ identity ============ */
 function showCode(c){ $('#idCode').textContent = c ? c : '— — —'; }
@@ -421,6 +443,7 @@ async function harvest(){
     if(c.uuid.startsWith('00002a24')) stats.push(['Model',s]);
     const m=s.match(/[A-Z0-9]{6}/);
     if(m&&!guess&&s!=='') guess=m[0];
+    if(slow())await sleep(50);
   }
   $('#idStats').innerHTML=stats.map(([k,v])=>`<div class="stat"><u>${k}</u><b>${v||'–'}</b></div>`).join('');
   const typed=$('#code').value.trim().toUpperCase();
@@ -488,9 +511,9 @@ $('#target').onclick=()=>{targetMode=(targetMode+1)%3;
 const cap=$('#cap');
 cap.oninput=()=>$('#capV').textContent=cap.value+' km/h';
 $('#capSet').onclick=async()=>{const k=+cap.value;set('busy','writing');
-  await writeReg(0x73,Math.round(k*10));await sleep(180);await readReg(0x73);set('on','cap '+k);beep(880);};
+  await writeReg(0x73,Math.round(k*10));await sleep(200);await readReg(0x73);set('on','cap '+k);beep(880);};
 $('#capOff').onclick=async()=>{set('busy','writing');
-  await writeReg(0x72,1);await sleep(180);await readReg(0x72);set('on','cap lifted');beep(880);};
+  await writeReg(0x72,1);await sleep(200);await readReg(0x72);set('on','cap lifted');beep(880);};
 document.querySelectorAll('.chip').forEach(b=>b.onclick=async()=>{
   b.parentElement.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));
   b.classList.add('on');
