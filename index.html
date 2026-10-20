@@ -24,12 +24,11 @@ h1{font-size:20px;margin:0;letter-spacing:-.4px}h1 b{color:var(--lime)}
 .sub{margin:2px 0 0;font-size:12px;color:var(--dim)}
 .pill{margin-left:auto;display:flex;align-items:center;gap:7px;font-size:10px;font-weight:600;
  text-transform:uppercase;letter-spacing:.09em;color:var(--dim);background:#121615;
- border:1px solid var(--line);border-radius:999px;padding:8px 12px;transition:.25s}
+ border:1px solid var(--line);border-radius:999px;padding:8px 12px;transition:.25s;cursor:pointer}
 .pill i{width:7px;height:7px;border-radius:50%;background:var(--dim);transition:.25s}
 .pill.on{color:var(--lime);border-color:rgba(0,224,122,.35)}
 .pill.on i{background:var(--lime);animation:pulse 1.8s infinite}
 .pill.busy i{background:#ffc247;animation:pulse .9s infinite}
-.pill.tap{cursor:pointer}
 @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(0,224,122,.55)}70%{box-shadow:0 0 0 9px rgba(0,224,122,0)}100%{box-shadow:0 0 0 0 rgba(0,224,122,0)}}
 .card{background:linear-gradient(180deg,#161a19,#121514);border:1px solid var(--line);
  border-radius:18px;padding:15px;margin-bottom:13px;box-shadow:0 14px 34px -24px #000}
@@ -52,13 +51,12 @@ input::placeholder{color:#5d6865}
 .stat{background:#0e1211;border:1px solid var(--line);border-radius:13px;padding:10px 13px}
 .stat u{display:block;text-decoration:none;font-size:10px;letter-spacing:.1em;
  text-transform:uppercase;color:var(--dim);margin-bottom:2px}
-.stat b{font-size:16px;font-variant-numeric:tabular-nums}
+.stat b{font-size:15px;word-break:break-all}
 #log{font:11px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre-wrap;
  word-break:break-all;max-height:200px;overflow:auto;color:#9fb0aa}
 #log b{color:var(--lime)}#log i{color:#ffc247;font-style:normal}
 #cam{margin-bottom:10px}#cam video{width:100%;border-radius:13px;display:block}
 .hide{display:none}
-/* ---- tuning UI ---- */
 .ttl{font-size:10px;letter-spacing:.11em;text-transform:uppercase;color:var(--dim);margin:0}
 .chip{padding:12px 0;font-size:13px}
 .chip.on{border-color:rgba(0,224,122,.5);color:var(--lime);background:rgba(0,224,122,.08)}
@@ -67,8 +65,10 @@ input[type=range]{-webkit-appearance:none;appearance:none;border:0;background:tr
 input[type=range]::-webkit-slider-runnable-track{height:4px;background:#1c2220;border-radius:9px}
 input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;
  background:var(--lime);margin-top:-9px;box-shadow:0 0 12px rgba(0,224,122,.5)}
-input[type=range]::-moz-range-track{height:4px;background:#1c2220;border-radius:9px}
 input[type=range]::-moz-range-thumb{width:22px;height:22px;border:0;border-radius:50%;background:var(--lime)}
+.idname{font-size:19px;font-weight:600;letter-spacing:-.3px;word-break:break-all;margin:2px 0 0}
+.idcode{font:22px/1.2 ui-monospace,Menlo,monospace;color:var(--lime);letter-spacing:.14em;
+ word-break:break-all;margin:2px 0 0}
 </style>
 </head>
 <body>
@@ -87,6 +87,15 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border:0;border-radiu
   <p class="hint">Stand within a metre, then pick the device named <b>Lime-…</b>.</p>
 </section>
 
+<section class="card hide" id="idcard">
+  <p class="ttl">You are connected to</p>
+  <div class="idname" id="idName">–</div>
+  <p class="ttl" style="margin-top:12px">Code in use</p>
+  <div class="idcode" id="idCode">— — —</div>
+  <p class="hint" id="idNote">Check this against the code printed under the QR on the scooter before you unlock.</p>
+  <div class="stats" id="idStats"></div>
+</section>
+
 <section class="card hide" id="panel">
   <div class="row">
     <input id="code" placeholder="Code under the QR">
@@ -97,6 +106,10 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border:0;border-radiu
     <button id="lock">Lock</button>
     <button id="probe">Probe all</button>
     <button id="read">Read info</button>
+  </div>
+  <div class="grid" style="margin-top:9px">
+    <button id="target">Target: auto</button>
+    <button id="reconnect">Reconnect</button>
   </div>
   <div id="cam" class="hide"></div>
   <div class="stats" id="stats"></div>
@@ -110,7 +123,6 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border:0;border-radiu
     <div class="stat"><u>Battery</u><b id="tBatt">–</b></div>
     <div class="stat"><u>Controller</u><b id="tTemp">–</b></div>
   </div>
-
   <p class="ttl" style="margin-top:16px">Speed cap</p>
   <div class="row" style="margin-top:6px">
     <input id="cap" type="range" min="10" max="35" step="1" value="25">
@@ -120,14 +132,12 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border:0;border-radiu
     <button class="primary" id="capSet">Set cap</button>
     <button id="capOff">Lift cap</button>
   </div>
-
   <p class="ttl" style="margin-top:16px">Ride mode</p>
   <div class="grid3">
     <button class="chip" data-mode="1">Eco</button>
     <button class="chip" data-mode="0">Normal</button>
     <button class="chip" data-mode="2">Sport</button>
   </div>
-
   <p class="ttl" style="margin-top:16px">Regen (KERS)</p>
   <div class="grid4">
     <button class="chip" data-kers="0">Off</button>
@@ -135,17 +145,15 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border:0;border-radiu
     <button class="chip" data-kers="2">2</button>
     <button class="chip" data-kers="3">3</button>
   </div>
-
   <p class="ttl" style="margin-top:16px">Cruise control</p>
   <div class="grid">
     <button class="chip" data-cruise="1">On</button>
     <button class="chip" data-cruise="0">Off</button>
   </div>
-
   <p class="ttl" style="margin-top:16px">Raw register</p>
   <div class="row" style="margin-top:6px">
-    <input id="rReg" placeholder="reg" value="73" style="font-family:ui-monospace,Menlo,monospace;text-align:center">
-    <input id="rVal" placeholder="value" value="250" style="font-family:ui-monospace,Menlo,monospace;text-align:center">
+    <input id="rReg" value="73" style="font-family:ui-monospace,Menlo,monospace;text-align:center">
+    <input id="rVal" value="250" style="font-family:ui-monospace,Menlo,monospace;text-align:center">
     <button id="rRead">R</button>
     <button id="rWrite">W</button>
   </div>
@@ -153,7 +161,7 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border:0;border-radiu
     <button id="diag">Diagnose hardware</button>
     <button id="reboot">Reboot scooter</button>
   </div>
-  <p class="hint" id="diagOut">Reads ESC magic + firmware to confirm the register map applies to this scooter.</p>
+  <p class="hint" id="diagOut">Reads ESC magic + firmware to confirm the register map applies.</p>
 </section>
 
 <section class="card">
@@ -177,12 +185,12 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 function log(k,m){const d=document.createElement('div');
   if(k=='tx')d.innerHTML='<i>&raquo;</i> '+m; else if(k=='rx')d.innerHTML='<b>&laquo;</b> '+m;
   else d.textContent=m; $('#log').prepend(d);}
-function set(s,t){$('#pill').className='pill'+(s=='on'?' on tap':s=='busy'?' busy':'');
+function set(s,t){$('#pill').className='pill'+(s=='on'?' on':s=='busy'?' busy':'');
   $('#pillTxt').textContent=t;}
-const beep=f=>{const a=beep.a||(beep.a=new(window.AudioContext||webkitAudioContext)()),
+const beep=f=>{try{const a=beep.a||(beep.a=new(window.AudioContext||webkitAudioContext)()),
   o=a.createOscillator(),g=a.createGain();o.frequency.value=f;o.connect(g);g.connect(a.destination);
   g.gain.setValueAtTime(.07,a.currentTime);g.gain.exponentialRampToValueAtTime(.001,a.currentTime+.13);
-  o.start();o.stop(a.currentTime+.14);};
+  o.start();o.stop(a.currentTime+.14);}catch(e){}};
 
 const SVC=['battery_service','device_information','generic_access','generic_attribute',
  '0000fe95-0000-1000-8000-00805f9b34fb','6e400001-b5a3-f393-e0a9-e50e24dcca9e',
@@ -191,20 +199,10 @@ const SVC=['battery_service','device_information','generic_access','generic_attr
  '0000ff00-0000-1000-8000-00805f9b34fb','0000fff1-0000-1000-8000-00805f9b34fb',
  '0000fff2-0000-1000-8000-00805f9b34fb','0000fff3-0000-1000-8000-00805f9b34fb'];
 
-let dev=null,wr=[],chars=[];
-const now=()=>Math.floor(Date.now()/1000);
-const AT=(d,p='')=>`AT+CMD,${p},${now()},0,${d}$`;
-// legacy guess frames — left exactly as they were, they are what makes unlock work
-const nb=(cmd,pl=[])=>{const f=[0x5A,0xA5,2+pl.length,0x20,cmd,...pl],
-  s=f.reduce((a,b)=>a+b,0);f.push(s&255,(s>>8)&255);return f;};
-const OPEN=()=>[AT('{"type":"unlock"}'),AT('{"type":"unlock"}','0'),AT('{"cmd":"unlock"}'),
-  AT('{"type":"unlock","state":1}'),nb(1,[1]),nb(2,[1]),nb(0x3D,[1])];
-const SHUT=()=>[AT('{"type":"lock"}'),nb(1,[0]),nb(2,[0]),nb(0x3D,[0])];
+let dev=null,wr=[],chars=[],pipe=null,gotReply=false,wantConnected=false,retry=0,targetMode=0;
 
-/* ==================== NINEBOT REGISTER LAYER ==================== */
-// canonical frame: 5A A5 | len | src | dst | cmd | arg | payload[len] | ck lo | ck hi
-// ck = 0xFFFF - (sum of len,src,dst,cmd,arg,payload), little-endian
-const APP=0x3D,ESC=0x20,BLE=0x21,BMS=0x22;
+/* ============ framing ============ */
+const APP=0x3D,ESC=0x20;
 const frame=(cmd,arg=0,pl=[],src=APP,dst=ESC)=>{
   const body=[src,dst,cmd,arg,...pl],len=pl.length;
   const sum=[len,...body].reduce((a,b)=>a+b,0)&0xFFFF;
@@ -213,88 +211,183 @@ const frame=(cmd,arg=0,pl=[],src=APP,dst=ESC)=>{
 };
 const readReg =(off,len=2,silent)=>send(frame(0x01,off,[len]),silent);
 const writeReg=(off,val,silent)=>send(frame(0x02,off,[val&0xFF,(val>>8)&0xFF]),silent);
-
-// promise-based read, so the UI can await a value instead of guessing
 const pending=new Map();
-function readRegA(off,len=2,timeout=1200){
-  return new Promise(res=>{
-    const to=setTimeout(()=>{pending.delete(off);res(null);},timeout);
-    pending.set(off,v=>{clearTimeout(to);pending.delete(off);res(v);});
-    readReg(off,len,true);
-  });
+function readRegA(off,len=2,timeout=1000){
+  return new Promise(res=>{const to=setTimeout(()=>{pending.delete(off);res(null);},timeout);
+    pending.set(off,v=>{clearTimeout(to);pending.delete(off);res(v);});readReg(off,len,true);});
+}
+const now=()=>Math.floor(Date.now()/1000);
+const AT=(d,p='',term='$')=>`AT+CMD,${p},${now()},0,${d}${term}`;
+const j=o=>JSON.stringify(o);
+
+const OPEN=code=>{
+  const L=[];
+  if(code){
+    L.push(AT(j({type:'unlock',code})));
+    L.push(AT(j({type:'unlock',code}),'0'));
+    L.push(`AT+CMD,0,${now()},0,${j({type:'unlock',code})}$`);
+    L.push(`AT+CMD,0,${now()},0,${j({type:'unlock',code})}\r\n`);
+  }
+  L.push(AT(j({type:'unlock'})));
+  L.push(AT(j({type:'unlock'}),'0'));
+  L.push(AT(j({cmd:'unlock'})));
+  L.push(frame(0x02,0x71,[1,0]));
+  L.push(frame(0x01,0x00,[2]));
+  return L;
+};
+const SHUT=()=>[AT(j({type:'lock'})),frame(0x02,0x70,[1,0])];
+
+/* ============ transport ============ */
+// prefer write-with-response: Chrome then uses the long-write procedure for >20 byte frames
+async function writeTo(c,d){
+  if(c.properties.write){ await c.writeValue(d); return; }
+  for(let i=0;i<d.length;i+=20){ await c.writeValueWithoutResponse(d.slice(i,i+20)); await sleep(18); }
+}
+function targets(){ return (targetMode===0?(pipe?[pipe]:wr):targetMode===1?(pipe?[pipe]:[]):wr); }
+async function send(b,silent){
+  const d=typeof b=='string'?enc.encode(b):new Uint8Array(b);
+  if(!silent)log('tx',hex(d)+(typeof b=='string'?' &nbsp;'+b:'')+' <span style="opacity:.45">'+d.length+'B</span>');
+  for(const c of targets()){
+    try{ await writeTo(c,d); }
+    catch(e){ if(!silent)log('','write failed '+c.uuid.slice(4,8)+': '+e.message); }
+  }
+}
+async function fire(list,repeat=1){
+  set('busy','sending');
+  for(let r=0;r<repeat;r++){
+    for(const f of list){ await send(f); await sleep(330); }
+    if(r<repeat-1) await sleep(420);
+  }
+  set('on','sent');beep(920);
 }
 
-const TEL={0x22:['batt','%'],0x26:['speed','km/h'],0xBD:['pow','W'],0x3E:['temp','C']};
+/* ============ inbound ============ */
+const TEL={0x22:'batt',0x26:'speed',0xBD:'pow',0x3E:'temp'};
 const tel={};
 function drawTel(){
-  const f=(k,div,unit,dp)=>$('#'+k).textContent=tel[unit]===undefined?'–':(tel[unit]/div).toFixed(dp)+' '+unit;
   $('#tSpeed').textContent = tel.speed===undefined?'–':(tel.speed/10).toFixed(1)+' km/h';
   $('#tPow').textContent   = tel.pow  ===undefined?'–':tel.pow+' W';
   $('#tBatt').textContent  = tel.batt ===undefined?'–':tel.batt+'%';
   $('#tTemp').textContent  = tel.temp ===undefined?'–':(tel.temp/10).toFixed(0)+'°C';
 }
-function setCapUI(v){ if(v>50&&v<600){const k=Math.round(v/10);$('#cap').value=k;$('#capV').textContent=k+' km/h';} }
-
-// every inbound frame goes through here
 function parse(u){
   if(u[0]!==0x5A||u[1]!==0xA5){log('rx',hex(u)+' &nbsp;'+asc(u));return;}
+  gotReply=true;
   const cmd=u[5],arg=u[6],pl=[...u.slice(7,7+u[2])];
   const v=pl.length>=2?((pl[0]|(pl[1]<<8))<<16>>16):(pl[0]||0);
   const t=TEL[arg];
-  if(t&&cmd===0x04){ if(tel[t[0]]!==v){tel[t[0]]=v;drawTel();} }
+  if(t&&cmd===0x04){ if(tel[t]!==v){tel[t]=v;drawTel();} }
   else log('rx',hex(u)+' &nbsp;'+asc(u)+' &nbsp;reg 0x'+arg.toString(16).padStart(2,'0')+' = '+v);
   if(pending.has(arg)){const f=pending.get(arg);pending.delete(arg);f(v);}
-  if(arg===0x73||arg===0xBC)setCapUI(v);
+  if(arg===0x73&&v>50&&v<600){$('#cap').value=Math.round(v/10);$('#capV').textContent=Math.round(v/10)+' km/h';}
 }
 
-let poll=null,tick=0;
-function startPoll(){stopPoll();poll=setInterval(async()=>{
-  if(!dev||!dev.gatt.connected)return;
-  await readReg(0x26,2,true); await sleep(70);
-  await readReg(0xBD,2,true);
-  if(++tick%4===0){await sleep(70);await readReg(0x22,2,true);await sleep(70);await readReg(0x3E,2,true);}
-},700);}
-function stopPoll(){if(poll)clearInterval(poll);poll=null;}
-/* ================== END NINEBOT REGISTER LAYER ================== */
+/* ============ link management ============ */
+let ka=null;
+const startKA=()=>{stopKA();ka=setInterval(()=>{if(dev&&dev.gatt.connected)readReg(0x22,2,true);},1800);};
+const stopKA=()=>{if(ka)clearInterval(ka);ka=null;};
 
-async function send(b,silent){
-  const d=typeof b=='string'?enc.encode(b):new Uint8Array(b);
-  if(!silent)log('tx',hex(d)+(typeof b=='string'?' &nbsp;'+b:''));
-  for(const c of wr){try{await (c.properties.writeWithoutResponse
-    ? c.writeValueWithoutResponse(d):c.writeValue(d));}catch(e){}}
+async function enumerate(s){
+  const prim=await s.getPrimaryServices();
+  wr=[];chars=[];
+  const subs=[];
+  for(const sv of prim)for(const c of await sv.getCharacteristics()){
+    chars.push(c);
+    if(c.properties.write||c.properties.writeWithoutResponse)wr.push(c);
+    if(c.properties.notify||c.properties.indicate)subs.push(c);
+  }
+  await Promise.allSettled(subs.map(async c=>{
+    try{ await c.startNotifications();
+      c.addEventListener('characteristicvaluechanged',e=>parse(new Uint8Array(e.target.value.buffer)));
+    }catch(e){}
+  }));
+  log('','linked · '+prim.length+' svc · '+wr.length+' writable · '+subs.length+' notify');
 }
-async function fire(list){set('busy','sending');for(const f of list){await send(f);await sleep(400);}
-  set('on','sent');beep(920);}
+
+async function identify(){
+  pipe=null;
+  const seen=new Set(),cand=[];
+  for(const c of wr){ if(!seen.has(c.uuid)){seen.add(c.uuid);cand.push(c);} }
+  for(const c of cand.slice(0,6)){
+    gotReply=false;
+    try{ await writeTo(c,new Uint8Array(frame(0x01,0x00,[2]))); }catch(e){ continue; }
+    await sleep(260);
+    if(gotReply){ pipe=c; log('','pipe → '+c.uuid.slice(4,8)); return; }
+  }
+  log('','no reply to probes — frames will be sent to all writable');
+}
+
+async function link(initial){
+  try{
+    const s=await dev.gatt.connect();
+    await enumerate(s);
+    retry=0; wantConnected=true;
+    set('on','connected'); beep(660);
+    $('#panel').classList.remove('hide'); $('#idcard').classList.remove('hide'); $('#tune').classList.remove('hide');
+    startKA();
+    harvest();
+    if(!pipe) identify();
+    return true;
+  }catch(e){ log('','link failed: '+e.message); return false; }
+}
 
 $('#connect').onclick=async()=>{
-  try{set('busy','picking');
+  if(dev&&dev.gatt.connected)return;
+  if(dev){ await link(false); return; }
+  try{ set('busy','picking');
     dev=await navigator.bluetooth.requestDevice({filters:[{namePrefix:'Lime'}],optionalServices:SVC});
-  }catch(e){set('','offline');return;}
-  $('#link').textContent=dev.name;
-  dev.addEventListener('gattserverdisconnected',()=>{set('','offline');log('','disconnected');stopPoll();});
-  try{
-    const s=await dev.gatt.connect(),prim=await s.getPrimaryServices();
-    wr=[];chars=[];
-    for(const sv of prim)for(const c of await sv.getCharacteristics()){
-      chars.push(c);
-      if(c.properties.write||c.properties.writeWithoutResponse)wr.push(c);
-      if(c.properties.notify||c.properties.indicate){
-        try{await c.startNotifications();
-          c.addEventListener('characteristicvaluechanged',e=>parse(new Uint8Array(e.target.value.buffer)));}catch(e){}
-      }
+  }catch(e){ set('','offline'); return; }
+  $('#link').textContent=dev.name||'Lime scooter';
+  dev.addEventListener('gattserverdisconnected',async()=>{
+    stopKA(); log('','disconnected');
+    if(!wantConnected){ set('','offline'); return; }
+    while(wantConnected&&retry<8){
+      retry++; set('busy','retry '+retry);
+      await sleep(300+retry*350);
+      log('','reconnect '+retry+'…');
+      if(await link(false)){ log('','back online'); return; }
     }
-    log('','linked · '+prim.length+' services · '+wr.length+' writable');
-    set('on','connected');$('#panel').classList.remove('hide');$('#tune').classList.remove('hide');
-    beep(660);
-    readReg(0x73);await sleep(200);readReg(0x22);
-    startPoll();
-  }catch(e){set('','error');log('','link failed: '+e.message);}
+    set('','offline'); log('','gave up after '+retry+' tries');
+  });
+  await link(true);
 };
-$('#pill').onclick=()=>{if(dev&&dev.gatt.connected)dev.gatt.disconnect();};
-$('#open').onclick=()=>{const c=$('#code').value.trim().toUpperCase();
-  fire(c?[AT('{"type":"unlock","code":"'+c+'"}'),...OPEN()]:OPEN());};
+$('#pill').onclick=()=>{
+  if(dev&&dev.gatt.connected){ wantConnected=false; stopKA(); dev.gatt.disconnect(); set('','offline'); }
+  else if(dev){ wantConnected=true; retry=0; link(false); }
+};
+$('#reconnect').onclick=()=>{ wantConnected=true; retry=0; link(false); };
+
+/* ============ identity ============ */
+function showCode(c){ $('#idCode').textContent = c ? c : '— — —'; }
+async function harvest(){
+  $('#idName').textContent = dev.name || 'unknown scooter';
+  const stats=[]; let guess=null;
+  for(const c of chars){
+    if(!c.properties.read)continue;
+    let v; try{ v=await c.readValue(); }catch(e){ continue; }
+    const raw=new Uint8Array(v.buffer), s=asc(raw).trim();
+    if(c.uuid.startsWith('00002a25')) stats.push(['Serial',s]);
+    if(c.uuid.startsWith('00002a26')) stats.push(['Firmware',s]);
+    if(c.uuid.startsWith('00002a19')) stats.push(['Battery',raw[0]+'%']);
+    if(c.uuid.startsWith('00002a24')) stats.push(['Model',s]);
+    const m=s.match(/[A-Z0-9]{6}/);
+    if(m&&!guess&&s!=='') guess=m[0];
+  }
+  $('#idStats').innerHTML=stats.map(([k,v])=>`<div class="stat"><u>${k}</u><b>${v||'–'}</b></div>`).join('');
+  const typed=$('#code').value.trim().toUpperCase();
+  showCode(typed||guess);
+  if(guess&&!typed) $('#idNote').innerHTML='Name ends in <b>'+guess+'</b> — match it against the printed code before unlocking.';
+}
+
+/* ============ buttons ============ */
+$('#open').onclick=()=>{
+  const c=$('#code').value.trim().toUpperCase();
+  showCode(c);
+  fire(OPEN(c),c?2:1);
+};
 $('#lock').onclick=()=>fire(SHUT());
-$('#probe').onclick=()=>fire([...OPEN(),...SHUT()]);
+$('#probe').onclick=()=>fire([...OPEN($('#code').value.trim().toUpperCase()),...SHUT()]);
+$('#code').oninput=()=>showCode($('#code').value.trim().toUpperCase());
 $('#read').onclick=async()=>{let html='';
   for(const c of chars){if(!c.properties.read)continue;
     try{const v=await c.readValue();
@@ -314,23 +407,24 @@ $('#scan').onclick=async()=>{
     cv.width=v.videoWidth;cv.height=v.videoHeight;cx.drawImage(v,0,0);
     const d=cx.getImageData(0,0,cv.width,cv.height),r=jsQR(d.data,d.width,d.height);
     if(r){st.getTracks().forEach(t=>t.stop());$('#cam').classList.add('hide');
-      $('#code').value=r.data.split('/').filter(Boolean).pop().toUpperCase();
+      const seg=r.data.split(/[\/=]/).filter(Boolean).pop().replace(/[^A-Z0-9]/gi,'').toUpperCase();
+      $('#code').value=seg; showCode(seg);
       log('','QR → '+r.data);beep(1100);$('#open').click();}
     else requestAnimationFrame(tick);
   })();};
 $('#send').onclick=()=>{const h=$('#hex').value.replace(/[^0-9a-f]/gi,'');
   if(h.length%2)return;const a=[];for(let i=0;i<h.length;i+=2)a.push(parseInt(h.substr(i,2),16));send(a);};
 $('#clear').onclick=()=>$('#log').replaceChildren();
+$('#target').onclick=()=>{targetMode=(targetMode+1)%3;
+  $('#target').textContent='Target: '+['auto','pipe','all'][targetMode];};
 
-/* ---------------- tuning wiring ---------------- */
+/* ============ tuning ============ */
 const cap=$('#cap');
 cap.oninput=()=>$('#capV').textContent=cap.value+' km/h';
 $('#capSet').onclick=async()=>{const k=+cap.value;set('busy','writing');
-  await writeReg(0x73,Math.round(k*10));await sleep(200);await readReg(0x73);
-  set('on','cap '+k);beep(880);};
+  await writeReg(0x73,Math.round(k*10));await sleep(180);await readReg(0x73);set('on','cap '+k);beep(880);};
 $('#capOff').onclick=async()=>{set('busy','writing');
-  await writeReg(0x72,1);await sleep(200);await readReg(0x72);set('on','cap lifted');beep(880);};
-
+  await writeReg(0x72,1);await sleep(180);await readReg(0x72);set('on','cap lifted');beep(880);};
 document.querySelectorAll('.chip').forEach(b=>b.onclick=async()=>{
   b.parentElement.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));
   b.classList.add('on');
@@ -339,24 +433,18 @@ document.querySelectorAll('.chip').forEach(b=>b.onclick=async()=>{
   if(b.dataset.cruise !==undefined)await writeReg(0x7C,+b.dataset.cruise);
   beep(880);
 });
-
 const rh=()=>parseInt($('#rReg').value.replace(/[^0-9a-f]/gi,''),16);
 $('#rRead').onclick =()=>{const r=rh();if(!isNaN(r))readReg(r);};
 $('#rWrite').onclick=()=>{const r=rh(),v=+$('#rVal').value;if(!isNaN(r)&&!isNaN(v))writeReg(r,v);};
 $('#reboot').onclick=()=>writeReg(0x78,1);
-
 $('#diag').onclick=async()=>{
   const out=$('#diagOut');out.textContent='reading magic + firmware…';
   const magic=await readRegA(0x00);
-  if(magic===null){out.innerHTML='<b>no reply</b> — not a Ninebot-family ESC, or the frames are landing on the wrong characteristic. The register map may not apply here.';return;}
+  if(magic===null){out.innerHTML='<b>no reply</b> — not a Ninebot-family ESC, or frames land on the wrong pipe. Try Target: all.';return;}
   const fw=await readRegA(0x1A);
-  const sn=await readRegA(0x10,14);
   out.innerHTML='magic <b>0x'+(magic>>>0).toString(16).toUpperCase().padStart(4,'0')+'</b>'+
-    (magic===0x5C51?' ✓ Ninebot-family, register map applies':' (expected 5C51)')+
-    (fw!==null?' · ESC fw <b>'+fw+'</b>':'')+
-    (sn!==null?' · reg 0x10 = '+sn:'');
+    (magic===0x5C51?' ✓ register map applies':' (expected 5C51)')+(fw!==null?' · ESC fw <b>'+fw+'</b>':'');
 };
-/* ---------------- end tuning wiring ---------------- */
 
 log('','ready — connect to begin');
 </script>
