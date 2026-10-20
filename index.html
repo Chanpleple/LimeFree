@@ -65,7 +65,14 @@ input[type=range]{-webkit-appearance:none;appearance:none;border:0;background:tr
 input[type=range]::-webkit-slider-runnable-track{height:4px;background:#1c2220;border-radius:9px}
 input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;
  background:var(--lime);margin-top:-9px;box-shadow:0 0 12px rgba(0,224,122,.5)}
-input[type=range]::-moz-range-thumb{width:22px;height:22px;border:0;border-radius:50%;background:var(--lime)}
+.sw{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:12px;
+ font-size:13px;color:#a9b6b1}
+.sw input{flex:0 0 44px;width:44px;height:26px;padding:0;border:0;background:#1c2220;border-radius:999px;
+ -webkit-appearance:none;appearance:none;position:relative;transition:.2s}
+.sw input::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;
+ background:#5d6865;transition:.2s}
+.sw input:checked{background:rgba(0,224,122,.2)}
+.sw input:checked::after{left:21px;background:var(--lime)}
 .idname{font-size:19px;font-weight:600;letter-spacing:-.3px;word-break:break-all;margin:2px 0 0}
 .idcode{font:22px/1.2 ui-monospace,Menlo,monospace;color:var(--lime);letter-spacing:.14em;
  word-break:break-all;margin:2px 0 0}
@@ -85,6 +92,10 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border:0;border-radiu
 <section class="card">
   <button class="primary big" id="connect">Connect to a Lime scooter</button>
   <p class="hint">Stand within a metre, then pick the device named <b>Lime-…</b>.</p>
+  <p class="hint hide" id="btWarn" style="color:#ffc247">No Web Bluetooth here. On iPhone open this page in <b>Bluefy</b> — Safari does not support it.</p>
+  <label class="sw"><span>Unlock immediately on connect</span><input type="checkbox" id="autoOpen"></label>
+  <label class="sw"><span>Show any Bluetooth device (bikes)</span><input type="checkbox" id="anyDev"></label>
+  <p class="hint" id="pairHint">If a PIN dialog appears, try <b>000000</b> or <b>123456</b>.</p>
 </section>
 
 <section class="card hide" id="idcard">
@@ -92,7 +103,7 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border:0;border-radiu
   <div class="idname" id="idName">–</div>
   <p class="ttl" style="margin-top:12px">Code in use</p>
   <div class="idcode" id="idCode">— — —</div>
-  <p class="hint" id="idNote">Check this against the code printed under the QR on the scooter before you unlock.</p>
+  <p class="hint" id="idNote">Check this against the code printed under the QR before you unlock.</p>
   <div class="stats" id="idStats"></div>
 </section>
 
@@ -197,9 +208,24 @@ const SVC=['battery_service','device_information','generic_access','generic_attr
  '0000fee7-0000-1000-8000-00805f9b34fb','0000fee0-0000-1000-8000-00805f9b34fb',
  '0000fff0-0000-1000-8000-00805f9b34fb','0000ffe0-0000-1000-8000-00805f9b34fb',
  '0000ff00-0000-1000-8000-00805f9b34fb','0000fff1-0000-1000-8000-00805f9b34fb',
- '0000fff2-0000-1000-8000-00805f9b34fb','0000fff3-0000-1000-8000-00805f9b34fb'];
+ '0000fff2-0000-1000-8000-00805f9b34fb','0000fff3-0000-1000-8000-00805f9b34fb',
+ '0000180a-0000-1000-8000-00805f9b34fb','0000180f-0000-1000-8000-00805f9b34fb',
+ '0000fe59-0000-1000-8000-00805f9b34fb','0000feea-0000-1000-8000-00805f9b34fb',
+ '0000feb0-0000-1000-8000-00805f9b34fb','0000fee3-0000-1000-8000-00805f9b34fb'];
 
 let dev=null,wr=[],chars=[],pipe=null,gotReply=false,wantConnected=false,retry=0,targetMode=0;
+
+const autoOpen=$('#autoOpen'),anyDev=$('#anyDev');
+autoOpen.checked=localStorage.getItem('lf_auto')==='1';
+anyDev.checked=localStorage.getItem('lf_any')==='1';
+autoOpen.onchange=()=>localStorage.setItem('lf_auto',autoOpen.checked?'1':'0');
+anyDev.onchange=()=>localStorage.setItem('lf_any',anyDev.checked?'1':'0');
+
+const IOS=/iPad|iPhone|iPod/.test(navigator.userAgent)||
+  (navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+if(!navigator.bluetooth)$('#btWarn').classList.remove('hide');
+if(IOS)$('#pairHint').innerHTML=
+  'iOS may ask for a PIN — try <b>000000</b> or <b>123456</b>. Or bond it in <b>Settings &rarr; Bluetooth</b> first, then it never asks.';
 
 /* ============ framing ============ */
 const APP=0x3D,ESC=0x20;
@@ -238,7 +264,7 @@ const OPEN=code=>{
 const SHUT=()=>[AT(j({type:'lock'})),frame(0x02,0x70,[1,0])];
 
 /* ============ transport ============ */
-// prefer write-with-response: Chrome then uses the long-write procedure for >20 byte frames
+// write-with-response first: Chrome/CoreBluetooth then use the long-write procedure for >20 byte frames
 async function writeTo(c,d){
   if(c.properties.write){ await c.writeValue(d); return; }
   for(let i=0;i<d.length;i+=20){ await c.writeValueWithoutResponse(d.slice(i,i+20)); await sleep(18); }
@@ -282,10 +308,28 @@ function parse(u){
   if(arg===0x73&&v>50&&v<600){$('#cap').value=Math.round(v/10);$('#capV').textContent=Math.round(v/10)+' km/h';}
 }
 
-/* ============ link management ============ */
-let ka=null;
-const startKA=()=>{stopKA();ka=setInterval(()=>{if(dev&&dev.gatt.connected)readReg(0x22,2,true);},1800);};
+/* ============ link ============ */
+let ka=null,wake=null;
+const startKA=()=>{stopKA();ka=setInterval(()=>{if(dev&&dev.gatt.connected)readReg(0x22,2,true);},IOS?1100:1800);};
 const stopKA=()=>{if(ka)clearInterval(ka);ka=null;};
+async function keepAwake(){
+  if(!('wakeLock' in navigator))return;
+  try{ wake=await navigator.wakeLock.request('screen'); log('','screen wake lock on'); }
+  catch(e){ log('','wake lock refused: '+e.message); }
+}
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState!=='visible')return;
+  keepAwake();
+  if(dev&&wantConnected&&!dev.gatt.connected){ retry=0; log('','foregrounded — reconnecting'); link(false); }
+});
+
+async function pickDevice(){
+  if(anyDev.checked){
+    try{ return await navigator.bluetooth.requestDevice({acceptAllDevices:true,optionalServices:SVC}); }
+    catch(e){ log('','acceptAllDevices unsupported — using the Lime filter'); }
+  }
+  return navigator.bluetooth.requestDevice({filters:[{namePrefix:'Lime'}],optionalServices:SVC});
+}
 
 async function enumerate(s){
   const prim=await s.getPrimaryServices();
@@ -314,7 +358,7 @@ async function identify(){
     await sleep(260);
     if(gotReply){ pipe=c; log('','pipe → '+c.uuid.slice(4,8)); return; }
   }
-  log('','no reply to probes — frames will be sent to all writable');
+  log('','no reply to probes — frames go to all writable');
 }
 
 async function link(initial){
@@ -324,19 +368,24 @@ async function link(initial){
     retry=0; wantConnected=true;
     set('on','connected'); beep(660);
     $('#panel').classList.remove('hide'); $('#idcard').classList.remove('hide'); $('#tune').classList.remove('hide');
-    startKA();
+    startKA(); keepAwake();
     harvest();
-    if(!pipe) identify();
+    if(!pipe) await identify();
+    if(autoOpen.checked) setTimeout(()=>$('#open').click(),400);
     return true;
-  }catch(e){ log('','link failed: '+e.message); return false; }
+  }catch(e){
+    log('','link failed: '+e.message);
+    if(/auth|encrypt|insufficient|pair/i.test(e.message))
+      log('','→ pairing needed. Try PIN 000000 or 123456 in the system dialog.');
+    return false;
+  }
 }
 
 $('#connect').onclick=async()=>{
   if(dev&&dev.gatt.connected)return;
   if(dev){ await link(false); return; }
-  try{ set('busy','picking');
-    dev=await navigator.bluetooth.requestDevice({filters:[{namePrefix:'Lime'}],optionalServices:SVC});
-  }catch(e){ set('','offline'); return; }
+  try{ set('busy','picking'); dev=await pickDevice(); }
+  catch(e){ set('','offline'); return; }
   $('#link').textContent=dev.name||'Lime scooter';
   dev.addEventListener('gattserverdisconnected',async()=>{
     stopKA(); log('','disconnected');
@@ -376,7 +425,7 @@ async function harvest(){
   $('#idStats').innerHTML=stats.map(([k,v])=>`<div class="stat"><u>${k}</u><b>${v||'–'}</b></div>`).join('');
   const typed=$('#code').value.trim().toUpperCase();
   showCode(typed||guess);
-  if(guess&&!typed) $('#idNote').innerHTML='Name ends in <b>'+guess+'</b> — match it against the printed code before unlocking.';
+  if(guess&&!typed) $('#idNote').innerHTML='Found <b>'+guess+'</b> on the scooter — match it against the printed code before unlocking.';
 }
 
 /* ============ buttons ============ */
@@ -397,21 +446,38 @@ $('#read').onclick=async()=>{let html='';
       log('',c.uuid.slice(4,8)+' = '+hex(v.buffer)+' &nbsp;'+asc(v.buffer));
     }catch(e){}}
   if(html)$('#stats').innerHTML=html;};
+
 $('#scan').onclick=async()=>{
-  const st=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
+  let st; try{ st=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}}}); }
+  catch(e){ log('','camera: '+e.message); return; }
+  const track=st.getVideoTracks()[0];
+  let live=true, torchOn=false;
   const v=document.createElement('video');v.playsInline=v.autoplay=true;v.srcObject=st;
-  $('#cam').replaceChildren(v);$('#cam').classList.remove('hide');
+  $('#cam').replaceChildren(v);
+  const fb=document.createElement('button');
+  fb.textContent='Flash off'; fb.style.marginTop='9px';
+  const canTorch=!!(track.getCapabilities&&track.getCapabilities().torch);
+  if(canTorch)$('#cam').appendChild(fb);
+  fb.onclick=async e=>{ e.stopPropagation(); torchOn=!torchOn;
+    try{ await track.applyConstraints({advanced:[{torch:torchOn}]}); }catch(err){}
+    fb.textContent='Flash '+(torchOn?'on':'off');
+    fb.style.color=torchOn?'var(--lime)':''; };
+  v.onclick=()=>{ live=false; st.getTracks().forEach(t=>t.stop()); $('#cam').classList.add('hide'); };
+  $('#cam').classList.remove('hide');
   const cv=document.createElement('canvas'),cx=cv.getContext('2d');
   (function tick(){
+    if(!live)return;
     if(!v.videoWidth)return requestAnimationFrame(tick);
     cv.width=v.videoWidth;cv.height=v.videoHeight;cx.drawImage(v,0,0);
     const d=cx.getImageData(0,0,cv.width,cv.height),r=jsQR(d.data,d.width,d.height);
-    if(r){st.getTracks().forEach(t=>t.stop());$('#cam').classList.add('hide');
+    if(r){ live=false; st.getTracks().forEach(t=>t.stop()); $('#cam').classList.add('hide');
       const seg=r.data.split(/[\/=]/).filter(Boolean).pop().replace(/[^A-Z0-9]/gi,'').toUpperCase();
       $('#code').value=seg; showCode(seg);
-      log('','QR → '+r.data);beep(1100);$('#open').click();}
+      log('','QR → '+r.data); beep(1100); $('#open').click(); }
     else requestAnimationFrame(tick);
-  })();};
+  })();
+};
+
 $('#send').onclick=()=>{const h=$('#hex').value.replace(/[^0-9a-f]/gi,'');
   if(h.length%2)return;const a=[];for(let i=0;i<h.length;i+=2)a.push(parseInt(h.substr(i,2),16));send(a);};
 $('#clear').onclick=()=>$('#log').replaceChildren();
