@@ -8,6 +8,7 @@
 <meta name="apple-mobile-web-app-title" content="LimeFree">
 <meta name="theme-color" content="#0b0d0c">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <title>LimeFree</title>
 <style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -15,28 +16,24 @@
 body{margin:0;background:var(--bg);color:var(--fg);overflow-x:hidden;
  padding:max(16px,env(safe-area-inset-top)) 16px calc(40px + env(safe-area-inset-bottom));
  font:15px/1.45 -apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif}
-body::before{content:"";position:fixed;inset:-30% -20% auto;height:62vh;pointer-events:none;z-index:0;
- background:radial-gradient(58% 58% at 50% 0%,rgba(0,224,122,.17),transparent 70%)}
-.wrap{position:relative;z-index:1;max-width:520px;margin:0 auto}
+.wrap{max-width:520px;margin:0 auto}
 header{display:flex;align-items:center;gap:12px;margin:4px 0 20px}
-.logo{width:40px;height:40px;flex:0 0 40px;filter:drop-shadow(0 0 14px rgba(0,224,122,.35))}
+.logo{width:40px;height:40px;flex:0 0 40px}
 h1{font-size:20px;margin:0;letter-spacing:-.4px}h1 b{color:var(--lime)}
 .sub{margin:2px 0 0;font-size:12px;color:var(--dim)}
 .pill{margin-left:auto;display:flex;align-items:center;gap:7px;font-size:10px;font-weight:600;
  text-transform:uppercase;letter-spacing:.09em;color:var(--dim);background:#121615;
- border:1px solid var(--line);border-radius:999px;padding:8px 12px;transition:.25s;cursor:pointer}
-.pill i{width:7px;height:7px;border-radius:50%;background:var(--dim);transition:.25s}
-.pill.on{color:var(--lime);border-color:rgba(0,224,122,.35)}
+ border:1px solid var(--line);border-radius:999px;padding:8px 12px;cursor:pointer}
+.pill i{width:7px;height:7px;border-radius:50%;background:var(--dim)}
+.pill.on{color:var(--lime);border-color:#2c4a3a}
 .pill.on i{background:var(--lime);animation:pulse 1.8s infinite}
 .pill.busy i{background:#ffc247;animation:pulse .9s infinite}
-@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(0,224,122,.55)}70%{box-shadow:0 0 0 9px rgba(0,224,122,0)}100%{box-shadow:0 0 0 0 rgba(0,224,122,0)}}
-.card{background:linear-gradient(180deg,#161a19,#121514);border:1px solid var(--line);
- border-radius:18px;padding:15px;margin-bottom:13px;box-shadow:0 14px 34px -24px #000}
+@keyframes pulse{50%{opacity:.25}}
+.card{background:#141817;border:1px solid var(--line);border-radius:18px;padding:15px;margin-bottom:13px}
 button{font:inherit;font-weight:600;border:0;border-radius:13px;padding:14px;width:100%;
- background:#1c2220;color:var(--fg);cursor:pointer;transition:transform .12s,opacity .2s}
-button:active{transform:scale(.975)}button:disabled{opacity:.4}
-.primary{background:linear-gradient(180deg,var(--lime),var(--lime2));color:#04140c;
- box-shadow:0 10px 26px -14px var(--lime)}
+ background:#1c2220;color:var(--fg);cursor:pointer}
+button:active{transform:scale(.98)}button:disabled{opacity:.4}
+.primary{background:var(--lime);color:#04140c}
 .big{padding:18px;font-size:16px}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:9px}
 .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:9px}
@@ -53,29 +50,32 @@ input::placeholder{color:#5d6865}
  text-transform:uppercase;color:var(--dim);margin-bottom:2px}
 .stat b{font-size:15px;word-break:break-all}
 #log{font:11px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre-wrap;
- word-break:break-all;max-height:200px;overflow:auto;color:#9fb0aa}
+ word-break:break-all;max-height:220px;overflow:auto;color:#9fb0aa}
 #log b{color:var(--lime)}#log i{color:#ffc247;font-style:normal}
 #cam{margin-bottom:10px}#cam video{width:100%;border-radius:13px;display:block}
 .hide{display:none}
 .ttl{font-size:10px;letter-spacing:.11em;text-transform:uppercase;color:var(--dim);margin:0}
 .chip{padding:12px 0;font-size:13px}
-.chip.on{border-color:rgba(0,224,122,.5);color:var(--lime);background:rgba(0,224,122,.08)}
+.chip.on{border-color:#2c4a3a;color:var(--lime);background:rgba(0,224,122,.08)}
 #capV{min-width:58px;text-align:right;font-variant-numeric:tabular-nums;color:var(--lime);font-size:13px}
 input[type=range]{-webkit-appearance:none;appearance:none;border:0;background:transparent;height:28px;padding:0}
 input[type=range]::-webkit-slider-runnable-track{height:4px;background:#1c2220;border-radius:9px}
 input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;
- background:var(--lime);margin-top:-9px;box-shadow:0 0 12px rgba(0,224,122,.5)}
+ background:var(--lime);margin-top:-9px}
 .sw{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:12px;
  font-size:13px;color:#a9b6b1}
 .sw input{flex:0 0 44px;width:44px;height:26px;padding:0;border:0;background:#1c2220;border-radius:999px;
- -webkit-appearance:none;appearance:none;position:relative;transition:.2s}
+ -webkit-appearance:none;appearance:none;position:relative}
 .sw input::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;
- background:#5d6865;transition:.2s}
+ background:#5d6865}
 .sw input:checked{background:rgba(0,224,122,.2)}
 .sw input:checked::after{left:21px;background:var(--lime)}
 .idname{font-size:19px;font-weight:600;letter-spacing:-.3px;word-break:break-all;margin:2px 0 0}
-.idcode{font:22px/1.2 ui-monospace,Menlo,monospace;color:var(--lime);letter-spacing:.14em;
+.idcode{font:20px/1.3 ui-monospace,Menlo,monospace;color:var(--lime);letter-spacing:.12em;
  word-break:break-all;margin:2px 0 0}
+#map{height:220px;border-radius:13px;margin-top:9px;background:#0e1211}
+.leaflet-container{background:#0e1211;font:inherit}
+#clearPins{color:var(--lime)}
 </style>
 </head>
 <body>
@@ -91,13 +91,23 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
 
 <section class="card">
   <button class="primary big" id="connect">Connect to a Lime scooter</button>
-  <p class="hint">Stand within a metre, then pick the device named <b>Lime-…</b>.</p>
+  <p class="hint">Stand within a metre, then pick the device named <b>Lime-…</b>.
+    If iOS asks to pair, tap <b>Cancel</b>.</p>
   <p class="hint hide" id="btWarn" style="color:#ffc247">No Web Bluetooth here. On iPhone open this page in <b>Bluefy</b>.</p>
   <label class="sw"><span>Unlock immediately on connect</span><input type="checkbox" id="autoOpen"></label>
   <label class="sw"><span>Show any Bluetooth device (bikes)</span><input type="checkbox" id="anyDev"></label>
   <label class="sw"><span>Slow, gentle connect</span><input type="checkbox" id="gentle"></label>
-  <p class="hint" id="pairHint">If a PIN dialog appears, answer it <b>before</b> touching anything. Try
-    <b>000000</b>, <b>123456</b>, <b>111111</b>, <b>654321</b>, <b>999999</b>.</p>
+</section>
+
+<section class="card">
+  <p class="ttl">Map</p>
+  <div id="map"></div>
+  <div class="grid">
+    <button id="locate">Locate me</button>
+    <button id="pinHere">Pin this scooter</button>
+  </div>
+  <p class="hint" id="mapNote">Locate yourself, then pin the scooter so you can find it again.
+    <span id="clearPins">clear pins</span></p>
 </section>
 
 <section class="card hide" id="idcard">
@@ -105,7 +115,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
   <div class="idname" id="idName">–</div>
   <p class="ttl" style="margin-top:12px">Code in use</p>
   <div class="idcode" id="idCode">— — —</div>
-  <p class="hint" id="idNote">Check this against the code printed under the QR before you unlock.</p>
+  <p class="hint" id="idNote">Check the code against what's printed under the QR before unlocking.</p>
   <div class="stats" id="idStats"></div>
 </section>
 
@@ -116,6 +126,10 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
   </div>
   <div class="row" style="margin-top:9px">
     <input id="atPw" placeholder="AT password (leave blank if unsure)" style="font-size:13px">
+  </div>
+  <div class="row" style="margin-top:9px">
+    <input id="atRaw" placeholder="raw AT command, sent as-is" style="font:12px ui-monospace,Menlo,monospace">
+    <button id="atSend">AT</button>
   </div>
   <div class="grid">
     <button id="scan">Scan QR</button>
@@ -187,12 +201,15 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
   </div>
   <div id="log"></div>
   <p class="hint" style="display:flex;justify-content:space-between">
-    <span id="link">no device</span><span id="clear" style="color:var(--lime)">clear</span>
+    <span id="link">no device</span>
+    <span><span id="copy" style="color:var(--lime);margin-right:14px">copy</span>
+    <span id="clear" style="color:var(--lime)">clear</span></span>
   </p>
 </section>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/jsQR@1.4.0/dist/jsQR.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 <script>
 const $=s=>document.querySelector(s),enc=new TextEncoder();
 const hex=b=>[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('').toUpperCase();
@@ -219,20 +236,68 @@ const SVC=['battery_service','device_information','generic_access','generic_attr
  '0000feb0-0000-1000-8000-00805f9b34fb','0000fee3-0000-1000-8000-00805f9b34fb'];
 
 let dev=null,wr=[],chars=[],pipe=null,gotReply=false,wantConnected=false,retry=0,targetMode=0;
-let upAt=0,fastDrops=0,seq=0;
+let upAt=0,fastDrops=0,seq=0,rxCount=0,busy=false;
 
 const autoOpen=$('#autoOpen'),anyDev=$('#anyDev'),gentle=$('#gentle');
-autoOpen.checked=localStorage.getItem('lf_auto')==='1';
-anyDev.checked=localStorage.getItem('lf_any')==='1';
-gentle.checked=localStorage.getItem('lf_gentle')==='1';
-autoOpen.onchange=()=>localStorage.setItem('lf_auto',autoOpen.checked?'1':'0');
-anyDev.onchange=()=>localStorage.setItem('lf_any',anyDev.checked?'1':'0');
-gentle.onchange=()=>localStorage.setItem('lf_gentle',gentle.checked?'1':'0');
+const loadSw=(el,k)=>{el.checked=localStorage.getItem(k)==='1';el.onchange=()=>localStorage.setItem(k,el.checked?'1':'0');};
+loadSw(autoOpen,'lf_auto');loadSw(anyDev,'lf_any');loadSw(gentle,'lf_gentle');
 
 const IOS=/iPad|iPhone|iPod/.test(navigator.userAgent)||
   (navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
 if(!navigator.bluetooth)$('#btWarn').classList.remove('hide');
 const slow=()=>IOS||gentle.checked;
+
+/* ================= map ================= */
+let map=null,meDot=null,pins=[];
+function initMap(){
+  if(map)return true;
+  if(typeof L==='undefined'){ $('#mapNote').textContent='map library not loaded'; return false; }
+  map=L.map('map',{zoomControl:true,attributionControl:false}).setView([0,0],2);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(map);
+  try{ pins=JSON.parse(localStorage.getItem('lf_pins')||'[]'); }catch(e){ pins=[]; }
+  pins.forEach(addPin);
+  setTimeout(()=>map.invalidateSize(),250);
+  return true;
+}
+function addPin(p){
+  if(!map)return null;
+  return L.circleMarker([p.lat,p.lng],{radius:8,color:'#00e07a',weight:2,fillColor:'#00e07a',fillOpacity:.35})
+    .addTo(map).bindPopup(p.label||'scooter');
+}
+function here(cb){
+  if(!navigator.geolocation){ $('#mapNote').textContent='no geolocation'; return; }
+  navigator.geolocation.getCurrentPosition(
+    p=>cb(p.coords.latitude,p.coords.longitude),
+    e=>$('#mapNote').textContent='location: '+e.message,
+    {enableHighAccuracy:true,timeout:9000,maximumAge:5000});
+}
+$('#locate').onclick=()=>{
+  if(!initMap())return;
+  $('#mapNote').textContent='locating…';
+  here((la,lo)=>{
+    if(meDot)meDot.setLatLng([la,lo]);
+    else meDot=L.circleMarker([la,lo],{radius:7,color:'#3b82f6',weight:3,fillColor:'#3b82f6',fillOpacity:.5}).addTo(map);
+    map.setView([la,lo],17);
+    $('#mapNote').textContent='you are here';
+  });
+};
+$('#pinHere').onclick=()=>{
+  if(!initMap())return;
+  $('#mapNote').textContent='locating…';
+  here((la,lo)=>{
+    const label=(dev&&dev.name)||$('#code').value.trim().toUpperCase()||'scooter';
+    const rec={lat:la,lng:lo,label};
+    pins.push(rec); localStorage.setItem('lf_pins',JSON.stringify(pins));
+    const m=addPin(rec); if(m)m.openPopup();
+    map.setView([la,lo],18);
+    $('#mapNote').textContent='pinned '+label;
+  });
+};
+$('#clearPins').onclick=()=>{
+  pins=[]; localStorage.setItem('lf_pins','[]');
+  if(map){ map.eachLayer(l=>{ if(l instanceof L.CircleMarker && l!==meDot) map.removeLayer(l); }); }
+  $('#mapNote').textContent='pins cleared';
+};
 
 /* ============ framing ============ */
 const APP=0x3D,ESC=0x20;
@@ -251,7 +316,6 @@ function readRegA(off,len=2,timeout=1200){
 }
 const now=()=>Math.floor(Date.now()/1000);
 const atPw=()=>$('#atPw').value.trim();
-// AT+type,password,time,sequence,data$
 const AT=(d,p=null,term='$')=>`AT+CMD,${p===null?atPw():p},${now()},0,${d}${term}`;
 const j=o=>JSON.stringify(o);
 
@@ -262,7 +326,6 @@ const OPEN=code=>{
     L.push(AT(j({type:'unlock',code})));
     L.push(AT(j({type:'unlock',code}),'0'));
     L.push(`AT+CMD,${atPw()},${now()},${seq},${j({type:'unlock',code})}$`);
-    L.push(`AT+CMD,${atPw()},${now()},0,${j({type:'unlock',code})}\r\n`);
   }
   L.push(AT(j({type:'unlock'})));
   L.push(AT(j({type:'unlock'}),'0'));
@@ -277,24 +340,29 @@ const SHUT=()=>[AT(j({type:'lock'})),frame(0x02,0x70,[1,0])];
 /* ============ transport ============ */
 async function writeTo(c,d){
   if(c.properties.write){ await c.writeValue(d); return; }
-  for(let i=0;i<d.length;i+=20){ await c.writeValueWithoutResponse(d.slice(i,i+20)); await sleep(20); }
+  for(let i=0;i<d.length;i+=20){ await c.writeValueWithoutResponse(d.slice(i,i+20)); await sleep(22); }
 }
 function targets(){ return (targetMode===0?(pipe?[pipe]:wr):targetMode===1?(pipe?[pipe]:[]):wr); }
 async function send(b,silent){
   const d=typeof b=='string'?enc.encode(b):new Uint8Array(b);
   if(!silent)log('tx',hex(d)+(typeof b=='string'?' &nbsp;'+b:'')+' <span style="opacity:.45">'+d.length+'B</span>');
   for(const c of targets()){
-    try{ await writeTo(c,d); if(slow())await sleep(45); }
+    try{ await writeTo(c,d); if(slow())await sleep(50); }
     catch(e){ if(!silent)log('','write failed '+c.uuid.slice(4,8)+': '+e.message); }
   }
 }
 async function fire(list,repeat=1){
-  set('busy','sending');
+  busy=true; set('busy','sending');
+  const before=rxCount;
   for(let r=0;r<repeat;r++){
-    for(const f of list){ await send(f); await sleep(slow()?480:330); }
+    for(const f of list){ await send(f); await sleep(slow()?480:340); }
     if(r<repeat-1) await sleep(450);
   }
-  set('on','sent');beep(920);
+  busy=false; set('on','sent');beep(920);
+  setTimeout(()=>{
+    if(rxCount===before) log('','!! no reply from the scooter — frames may not be reaching its parser');
+    else log('','reply seen ('+(rxCount-before)+' frames)');
+  },2600);
 }
 
 /* ============ inbound ============ */
@@ -308,7 +376,7 @@ function drawTel(){
 }
 function parse(u){
   if(u[0]!==0x5A||u[1]!==0xA5){log('rx',hex(u)+' &nbsp;'+asc(u));return;}
-  gotReply=true;
+  gotReply=true; rxCount++;
   const cmd=u[5],arg=u[6],pl=[...u.slice(7,7+u[2])];
   const v=pl.length>=2?((pl[0]|(pl[1]<<8))<<16>>16):(pl[0]||0);
   const t=TEL[arg];
@@ -320,7 +388,10 @@ function parse(u){
 
 /* ============ link ============ */
 let ka=null,wake=null;
-const startKA=()=>{stopKA();ka=setInterval(()=>{if(dev&&dev.gatt.connected)readReg(0x22,2,true);},slow()?1400:1800);};
+const startKA=()=>{stopKA();ka=setInterval(async()=>{
+  if(busy||!dev||!dev.gatt.connected)return;
+  busy=true; try{ await readReg(0x22,2,true); }catch(e){} busy=false;
+},slow()?1600:2200);};
 const stopKA=()=>{if(ka)clearInterval(ka);ka=null;};
 async function keepAwake(){
   if(!('wakeLock' in navigator))return;
@@ -343,32 +414,44 @@ async function pickDevice(){
 async function enumerate(s){
   const prim=await s.getPrimaryServices();
   wr=[];chars=[];
-  const subs=[];
-  for(const sv of prim)for(const c of await sv.getCharacteristics()){
-    chars.push(c);
-    if(c.properties.write||c.properties.writeWithoutResponse)wr.push(c);
-    if(c.properties.notify||c.properties.indicate)subs.push(c);
+  const subs=[],map=[];
+  for(const sv of prim){
+    const cs=await sv.getCharacteristics();
+    map.push(sv.uuid.slice(4,8)+'  service');
+    for(const c of cs){
+      chars.push(c);
+      const p=[];
+      if(c.properties.read)p.push('r');
+      if(c.properties.write)p.push('W');
+      if(c.properties.writeWithoutResponse)p.push('w');
+      if(c.properties.notify)p.push('n');
+      if(c.properties.indicate)p.push('i');
+      map.push('   '+c.uuid.slice(4,8)+'  ['+p.join('')+']');
+      if(c.properties.write||c.properties.writeWithoutResponse)wr.push(c);
+      if(c.properties.notify||c.properties.indicate)subs.push(c);
+    }
   }
   const bind=c=>c.addEventListener('characteristicvaluechanged',
     e=>parse(new Uint8Array(e.target.value.buffer)));
   if(slow()){
-    for(const c of subs){ try{ await c.startNotifications(); bind(c); await sleep(60); }catch(e){} }
+    for(const c of subs){ try{ await c.startNotifications(); bind(c); await sleep(70); }catch(e){} }
   }else{
     await Promise.allSettled(subs.map(async c=>{
       try{ await c.startNotifications(); bind(c); }catch(e){}
     }));
   }
   log('','linked · '+prim.length+' svc · '+wr.length+' writable · '+subs.length+' notify');
+  map.forEach(m=>log('',m));
 }
 
 async function identify(){
   pipe=null;
   const seen=new Set(),cand=[];
   for(const c of wr){ if(!seen.has(c.uuid)){seen.add(c.uuid);cand.push(c);} }
-  for(const c of cand.slice(0,6)){
+  for(const c of cand.slice(0,5)){
     gotReply=false;
     try{ await writeTo(c,new Uint8Array(frame(0x01,0x00,[2]))); }catch(e){ continue; }
-    await sleep(slow()?380:260);
+    await sleep(slow()?400:280);
     if(gotReply){ pipe=c; log('','pipe → '+c.uuid.slice(4,8)); return; }
   }
   log('','no reply to probes — frames go to all writable');
@@ -378,21 +461,19 @@ async function link(initial){
   try{
     const s=await dev.gatt.connect();
     upAt=Date.now();
-    if(slow()){ set('busy','settling'); await sleep(1400); }
+    if(slow()){ set('busy','settling'); await sleep(1500); }
     await enumerate(s);
     retry=0; wantConnected=true;
     set('on','connected'); beep(660);
     $('#panel').classList.remove('hide'); $('#idcard').classList.remove('hide'); $('#tune').classList.remove('hide');
     startKA(); keepAwake();
-    if(slow())await sleep(300);
-    harvest();
-    if(!pipe) await identify();
-    if(autoOpen.checked) setTimeout(()=>$('#open').click(),500);
+    // stagger the background work so the link is not hammered the moment it comes up
+    setTimeout(()=>harvest(),slow()?900:400);
+    setTimeout(()=>{ if(!pipe)identify(); },slow()?2200:1200);
+    if(autoOpen.checked) setTimeout(()=>$('#open').click(),slow()?3200:1800);
     return true;
   }catch(e){
     log('','link failed: '+e.message);
-    if(/auth|encrypt|insufficient|pair/i.test(e.message))
-      log('','→ pairing wanted. Answer the system PIN dialog, then tap Reconnect.');
     return false;
   }
 }
@@ -406,13 +487,13 @@ $('#connect').onclick=async()=>{
   dev.addEventListener('gattserverdisconnected',async()=>{
     stopKA();
     const dur=Date.now()-upAt;
-    if(dur<2500)fastDrops++; else fastDrops=0;
+    if(dur<3000)fastDrops++; else fastDrops=0;
     log('','disconnected'+(fastDrops>1?(' (fast drop '+fastDrops+')'):''));
     if(!wantConnected){ set('','offline'); return; }
-    if(fastDrops>=2) log('','→ if a PIN dialog is up, answer it. Or toggle Bluetooth off/on.');
-    while(wantConnected&&retry<10){
+    if(fastDrops>=3) log('','→ move closer, or the scooter may have gone to sleep');
+    while(wantConnected&&retry<12){
       retry++;
-      const wait=Math.min(500*Math.pow(1.6,retry-1)+fastDrops*700,7000);
+      const wait=Math.min(600*Math.pow(1.55,retry-1)+fastDrops*800,8000);
       set('busy','retry '+retry);
       await sleep(wait);
       log('','reconnect '+retry+' after '+Math.round(wait)+'ms');
@@ -431,6 +512,8 @@ $('#reconnect').onclick=()=>{ wantConnected=true; retry=0; fastDrops=0; link(fal
 /* ============ identity ============ */
 function showCode(c){ $('#idCode').textContent = c ? c : '— — —'; }
 async function harvest(){
+  if(busy)return;
+  busy=true;
   $('#idName').textContent = dev.name || 'unknown scooter';
   const stats=[]; let guess=null;
   for(const c of chars){
@@ -443,12 +526,12 @@ async function harvest(){
     if(c.uuid.startsWith('00002a24')) stats.push(['Model',s]);
     const m=s.match(/[A-Z0-9]{6}/);
     if(m&&!guess&&s!=='') guess=m[0];
-    if(slow())await sleep(50);
+    if(slow())await sleep(60);
   }
   $('#idStats').innerHTML=stats.map(([k,v])=>`<div class="stat"><u>${k}</u><b>${v||'–'}</b></div>`).join('');
   const typed=$('#code').value.trim().toUpperCase();
   showCode(typed||guess);
-  if(guess&&!typed) $('#idNote').innerHTML='Found <b>'+guess+'</b> on the scooter — match it against the printed code before unlocking.';
+  busy=false;
 }
 
 /* ============ buttons ============ */
@@ -460,6 +543,7 @@ $('#open').onclick=()=>{
 $('#lock').onclick=()=>fire(SHUT());
 $('#probe').onclick=()=>fire([...OPEN($('#code').value.trim().toUpperCase()),...SHUT()]);
 $('#code').oninput=()=>showCode($('#code').value.trim().toUpperCase());
+$('#atSend').onclick=()=>{const t=$('#atRaw').value.trim();if(t)send(t);};
 $('#read').onclick=async()=>{let html='';
   for(const c of chars){if(!c.properties.read)continue;
     try{const v=await c.readValue();
@@ -471,32 +555,42 @@ $('#read').onclick=async()=>{let html='';
   if(html)$('#stats').innerHTML=html;};
 
 $('#scan').onclick=async()=>{
+  if(typeof jsQR!=='function'){ log('','QR library not loaded yet — try again in a second'); return; }
   let st; try{ st=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}}}); }
   catch(e){ log('','camera: '+e.message); return; }
   const track=st.getVideoTracks()[0];
+  let caps={}; try{ caps=track.getCapabilities?track.getCapabilities():{}; }catch(e){}
   let live=true, torchOn=false;
-  const v=document.createElement('video');v.playsInline=v.autoplay=true;v.srcObject=st;
+  const v=document.createElement('video');
+  v.playsInline=true; v.autoplay=true; v.muted=true; v.srcObject=st;
   $('#cam').replaceChildren(v);
   const fb=document.createElement('button');
   fb.textContent='Flash off'; fb.style.marginTop='9px';
-  const canTorch=!!(track.getCapabilities&&track.getCapabilities().torch);
-  if(canTorch)$('#cam').appendChild(fb);
+  if(caps.torch)$('#cam').appendChild(fb);
   fb.onclick=async e=>{ e.stopPropagation(); torchOn=!torchOn;
     try{ await track.applyConstraints({advanced:[{torch:torchOn}]}); }catch(err){}
     fb.textContent='Flash '+(torchOn?'on':'off');
     fb.style.color=torchOn?'var(--lime)':''; };
   v.onclick=()=>{ live=false; st.getTracks().forEach(t=>t.stop()); $('#cam').classList.add('hide'); };
   $('#cam').classList.remove('hide');
-  const cv=document.createElement('canvas'),cx=cv.getContext('2d');
+  log('','camera on — tap the video to cancel');
+  try{ await v.play(); }catch(e){}
+  const cv=document.createElement('canvas'),cx=cv.getContext('2d',{willReadFrequently:true});
   (function tick(){
     if(!live)return;
     if(!v.videoWidth)return requestAnimationFrame(tick);
-    cv.width=v.videoWidth;cv.height=v.videoHeight;cx.drawImage(v,0,0);
-    const d=cx.getImageData(0,0,cv.width,cv.height),r=jsQR(d.data,d.width,d.height);
-    if(r){ live=false; st.getTracks().forEach(t=>t.stop()); $('#cam').classList.add('hide');
+    const w=Math.min(v.videoWidth,560);
+    const h=Math.round(v.videoHeight*(w/v.videoWidth));
+    cv.width=w;cv.height=h;cx.drawImage(v,0,0,w,h);
+    const d=cx.getImageData(0,0,w,h);
+    let r=null; try{ r=jsQR(d.data,w,h,{inversionAttempts:'dontInvert'}); }catch(e){}
+    if(r&&r.data){
+      live=false; st.getTracks().forEach(t=>t.stop()); $('#cam').classList.add('hide');
+      log('','QR → '+r.data);
       const seg=r.data.split(/[\/=]/).filter(Boolean).pop().replace(/[^A-Z0-9]/gi,'').toUpperCase();
-      $('#code').value=seg; showCode(seg);
-      log('','QR → '+r.data); beep(1100); $('#open').click(); }
+      if(seg){ $('#code').value=seg; showCode(seg); }
+      beep(1100); $('#open').click();
+    }
     else requestAnimationFrame(tick);
   })();
 };
@@ -504,23 +598,29 @@ $('#scan').onclick=async()=>{
 $('#send').onclick=()=>{const h=$('#hex').value.replace(/[^0-9a-f]/gi,'');
   if(h.length%2)return;const a=[];for(let i=0;i<h.length;i+=2)a.push(parseInt(h.substr(i,2),16));send(a);};
 $('#clear').onclick=()=>$('#log').replaceChildren();
+$('#copy').onclick=()=>{
+  const t=[...$('#log').children].reverse().map(d=>d.textContent).join('\n');
+  const ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();
+  try{document.execCommand('copy');}catch(e){} ta.remove();
+  $('#copy').textContent='copied'; setTimeout(()=>$('#copy').textContent='copy',1200);
+};
 $('#target').onclick=()=>{targetMode=(targetMode+1)%3;
   $('#target').textContent='Target: '+['auto','pipe','all'][targetMode];};
 
 /* ============ tuning ============ */
 const cap=$('#cap');
 cap.oninput=()=>$('#capV').textContent=cap.value+' km/h';
-$('#capSet').onclick=async()=>{const k=+cap.value;set('busy','writing');
-  await writeReg(0x73,Math.round(k*10));await sleep(200);await readReg(0x73);set('on','cap '+k);beep(880);};
-$('#capOff').onclick=async()=>{set('busy','writing');
-  await writeReg(0x72,1);await sleep(200);await readReg(0x72);set('on','cap lifted');beep(880);};
+$('#capSet').onclick=async()=>{const k=+cap.value;busy=true;set('busy','writing');
+  await writeReg(0x73,Math.round(k*10));await sleep(200);await readReg(0x73);busy=false;set('on','cap '+k);beep(880);};
+$('#capOff').onclick=async()=>{busy=true;set('busy','writing');
+  await writeReg(0x72,1);await sleep(200);await readReg(0x72);busy=false;set('on','cap lifted');beep(880);};
 document.querySelectorAll('.chip').forEach(b=>b.onclick=async()=>{
   b.parentElement.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));
-  b.classList.add('on');
+  b.classList.add('on'); busy=true;
   if(b.dataset.mode   !==undefined)await writeReg(0x75,+b.dataset.mode);
   if(b.dataset.kers   !==undefined)await writeReg(0x7B,+b.dataset.kers);
   if(b.dataset.cruise !==undefined)await writeReg(0x7C,+b.dataset.cruise);
-  beep(880);
+  busy=false; beep(880);
 });
 const rh=()=>parseInt($('#rReg').value.replace(/[^0-9a-f]/gi,''),16);
 $('#rRead').onclick =()=>{const r=rh();if(!isNaN(r))readReg(r);};
