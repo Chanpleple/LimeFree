@@ -1,775 +1,254 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="LimeFree">
-<meta name="theme-color" content="#0b0d0c">
-<link rel="apple-touch-icon" href="apple-touch-icon.png">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<title>LimeFree</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="color-scheme" content="dark" />
+<meta name="theme-color" content="#0c1207" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-title" content="Lime Unlocker" />
+<title>Lime Unlocker</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛴</text></svg>" />
 <style>
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-:root{--bg:#0b0d0c;--line:#232a28;--fg:#eef3f0;--dim:#7f8b87;--lime:#00e07a;--lime2:#00b862}
-body{margin:0;background:var(--bg);color:var(--fg);overflow-x:hidden;
- padding:max(16px,env(safe-area-inset-top)) 16px calc(40px + env(safe-area-inset-bottom));
- font:15px/1.45 -apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif}
-.wrap{max-width:520px;margin:0 auto}
-header{display:flex;align-items:center;gap:12px;margin:4px 0 20px}
-.logo{width:40px;height:40px;flex:0 0 40px}
-h1{font-size:20px;margin:0;letter-spacing:-.4px}h1 b{color:var(--lime)}
-.sub{margin:2px 0 0;font-size:12px;color:var(--dim)}
-.pill{margin-left:auto;display:flex;align-items:center;gap:7px;font-size:10px;font-weight:600;
- text-transform:uppercase;letter-spacing:.09em;color:var(--dim);background:#121615;
- border:1px solid var(--line);border-radius:999px;padding:8px 12px;cursor:pointer}
-.pill i{width:7px;height:7px;border-radius:50%;background:var(--dim)}
-.pill.on{color:var(--lime);border-color:#2c4a3a}
-.pill.on i{background:var(--lime);animation:pulse 1.8s infinite}
-.pill.busy i{background:#ffc247;animation:pulse .9s infinite}
-@keyframes pulse{50%{opacity:.25}}
-.card{background:#141817;border:1px solid var(--line);border-radius:18px;padding:15px;margin-bottom:13px}
-button{font:inherit;font-weight:600;border:0;border-radius:13px;padding:14px;width:100%;
- background:#1c2220;color:var(--fg);cursor:pointer}
-button:active{transform:scale(.98)}button:disabled{opacity:.4}
-.primary{background:var(--lime);color:#04140c}
-.big{padding:18px;font-size:16px}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:9px}
-.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:9px}
-.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-top:9px}
-.row{display:flex;gap:9px;align-items:center}
-input,select{flex:1;min-width:0;background:#0e1211;border:1px solid var(--line);color:var(--fg);
- border-radius:13px;padding:14px;font:inherit}
-input::placeholder{color:#5d6865}
-input[type=file]{padding:11px;font-size:12px}
-.row button{width:auto;padding-left:18px;padding-right:18px}
-.hint{font-size:12px;color:var(--dim);margin:10px 0 0}.hint b{color:#a9b6b1}
-.stats{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:10px}
-.stat{background:#0e1211;border:1px solid var(--line);border-radius:13px;padding:10px 13px}
-.stat u{display:block;text-decoration:none;font-size:10px;letter-spacing:.1em;
- text-transform:uppercase;color:var(--dim);margin-bottom:2px}
-.stat b{font-size:15px;word-break:break-all}
-#log{font:11px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre-wrap;
- word-break:break-all;max-height:220px;overflow:auto;color:#9fb0aa}
-#log b{color:var(--lime)}#log i{color:#ffc247;font-style:normal}
-#cam{margin-bottom:10px}#cam video{width:100%;border-radius:13px;display:block}
-.hide{display:none}
-.ttl{font-size:10px;letter-spacing:.11em;text-transform:uppercase;color:var(--dim);margin:0}
-.chip{padding:12px 0;font-size:13px}
-.chip.on{border-color:#2c4a3a;color:var(--lime);background:rgba(0,224,122,.08)}
-#capV{min-width:58px;text-align:right;font-variant-numeric:tabular-nums;color:var(--lime);font-size:13px}
-input[type=range]{-webkit-appearance:none;appearance:none;border:0;background:transparent;height:28px;padding:0}
-input[type=range]::-webkit-slider-runnable-track{height:4px;background:#1c2220;border-radius:9px}
-input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;
- background:var(--lime);margin-top:-9px}
-.sw{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:12px;
- font-size:13px;color:#a9b6b1}
-.sw input{flex:0 0 44px;width:44px;height:26px;padding:0;border:0;background:#1c2220;border-radius:999px;
- -webkit-appearance:none;appearance:none;position:relative}
-.sw input::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;
- background:#5d6865}
-.sw input:checked{background:rgba(0,224,122,.2)}
-.sw input:checked::after{left:21px;background:var(--lime)}
-.idname{font-size:19px;font-weight:600;letter-spacing:-.3px;word-break:break-all;margin:2px 0 0}
-.idcode{font:20px/1.3 ui-monospace,Menlo,monospace;color:var(--lime);letter-spacing:.12em;
- word-break:break-all;margin:2px 0 0}
-#map{height:220px;border-radius:13px;margin-top:9px;background:#0e1211}
-.leaflet-container{background:#0e1211;font:inherit}
-#clearPins{color:var(--lime)}
-.bar{height:8px;background:#0e1211;border:1px solid var(--line);border-radius:999px;margin-top:10px;overflow:hidden}
-.bar div{height:100%;width:0;background:var(--lime);transition:width .15s}
+:root{
+  --bg:#0b0f0a; --panel:#141a12; --panel2:#1b2318; --line:#2b3724;
+  --fg:#e9f3e3; --dim:#95a68b; --accent:#a6ff4d; --accent2:#79d321;
+  --danger:#ff6b60; --ok:#3ddc84; --warn:#ffc247;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{
+  background:radial-gradient(1100px 520px at 50% -12%, #1e2c15 0%, var(--bg) 62%) fixed;
+  color:var(--fg); -webkit-text-size-adjust:100%;
+  font:16px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  padding:16px 14px calc(28px + env(safe-area-inset-bottom));
+  max-width:740px; margin:0 auto;
+}
+header{display:flex;align-items:center;gap:10px;margin:4px 0 16px}
+h1{font-size:20px;margin:0;letter-spacing:-.3px;flex:1}
+.pill{font-size:11px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;
+  padding:5px 9px;border-radius:99px;border:1px solid var(--line);color:var(--dim);white-space:nowrap}
+.pill.on{color:#0b0f0a;background:var(--accent);border-color:var(--accent)}
+.pill.warn{color:var(--warn);border-color:#5a4a1e}
+.card{background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line);
+  border-radius:16px;padding:14px;margin-bottom:12px}
+.card h2{font-size:12px;letter-spacing:1.2px;text-transform:uppercase;color:var(--dim);margin:0 0 10px}
+label{display:block;font-size:12px;color:var(--dim);margin:0 0 10px}
+select,input[type=text],input[type=number],textarea{
+  width:100%;margin-top:5px;background:#0d120b;color:var(--fg);border:1px solid var(--line);
+  border-radius:10px;padding:10px 11px;font-size:16px;font-family:inherit;-webkit-appearance:none;appearance:none}
+select{background-image:linear-gradient(45deg,transparent 50%,var(--dim) 50%),linear-gradient(135deg,var(--dim) 50%,transparent 50%);
+  background-position:calc(100% - 17px) 50%,calc(100% - 12px) 50%;background-size:5px 5px,5px 5px;background-repeat:no-repeat}
+textarea{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:14px;resize:vertical}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent2)}
+.row{display:flex;gap:10px}
+.row>*{flex:1}
+button{font:inherit;font-weight:650;border-radius:12px;border:1px solid var(--line);
+  background:#1a2316;color:var(--fg);padding:13px 14px;cursor:pointer;transition:.12s;
+  -webkit-tap-highlight-color:transparent}
+button:active{transform:scale(.985)}
+button:disabled{opacity:.4;cursor:default}
+button.primary{background:linear-gradient(180deg,var(--accent),var(--accent2));color:#0b0f0a;border-color:transparent}
+button.ghost{background:transparent}
+button.danger{color:var(--danger)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grid button.big{padding:18px 12px;font-size:16px}
+.hint{font-size:12px;color:var(--dim);margin:10px 0 0;line-height:1.5}
+.hint code{background:#0d120b;padding:1px 5px;border-radius:5px;font-size:11px}
+.check{display:flex;align-items:center;gap:9px;font-size:14px;color:var(--fg);margin:12px 0 0}
+.check input{width:20px;height:20px;margin:0;accent-color:var(--accent2)}
+details.card{padding:0}
+details.card>summary{padding:14px;cursor:pointer;font-size:12px;letter-spacing:1.2px;
+  text-transform:uppercase;color:var(--dim);list-style:none}
+details.card>summary::-webkit-details-marker{display:none}
+details.card>summary::before{content:"▸ ";color:var(--accent2)}
+details.card[open]>summary::before{content:"▾ "}
+.dbody{padding:0 14px 14px}
+table{width:100%;border-collapse:collapse;font-size:11px;font-family:ui-monospace,Menlo,monospace}
+th,td{text-align:left;padding:5px 6px;border-bottom:1px solid var(--line);word-break:break-all;vertical-align:top}
+th{color:var(--dim);font-weight:600;font-size:10px;letter-spacing:.5px;text-transform:uppercase}
+td.p{color:var(--accent2);font-size:10px}
+#log{height:230px;overflow:auto;background:#080b07;border:1px solid var(--line);border-radius:10px;
+  padding:9px;font:12px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;-webkit-overflow-scrolling:touch}
+.logline{display:flex;gap:8px;word-break:break-all}
+.logline .t{color:#4a5a42;flex:none}
+.logline.tx .m{color:var(--accent)}
+.logline.rx .m{color:#6cc7ff}
+.logline.err .m{color:var(--danger)}
+.logline.ok .m{color:var(--ok)}
+.logline.warn .m{color:var(--warn)}
+.logline.dim .m{color:var(--dim)}
+.banner{font-size:12px;background:#20301a;border:1px solid #375226;color:#cfe9bf;
+  padding:9px 11px;border-radius:10px;margin-bottom:12px}
+.sep{height:1px;background:var(--line);margin:14px 0}
+.mini{font-size:11px}
+.res{font-family:ui-monospace,Menlo,monospace;font-size:13px;color:var(--accent);word-break:break-all;margin-top:8px}
 </style>
 </head>
 <body>
-<div class="wrap">
+
 <header>
-  <svg class="logo" viewBox="0 0 48 48" fill="none" stroke="#00e07a" stroke-width="2.6" stroke-linecap="round">
-    <circle cx="12" cy="34" r="6.5"/><circle cx="36" cy="34" r="6.5"/>
-    <path d="M12 34h16"/><path d="M28 34 34 18"/><path d="M30.5 18h7.5"/>
-  </svg>
-  <div><h1>Lime<b>Free</b></h1><p class="sub">Bluetooth key · no account</p></div>
-  <div class="pill" id="pill"><i></i><span id="pillTxt">offline</span></div>
+  <h1>🛴 Lime Unlocker</h1>
+  <div id="status" class="pill">disconnected</div>
 </header>
 
 <section class="card">
-  <button class="primary big" id="connect">Connect to a Lime scooter</button>
-  <p class="hint">Stand within a metre, then pick the device named <b>Lime-…</b>.
-    If iOS asks to pair, tap <b>Cancel</b>.</p>
-  <p class="hint hide" id="btWarn" style="color:#ffc247">No Web Bluetooth here. On iPhone open this page in <b>Bluefy</b>.</p>
-  <label class="sw"><span>Unlock immediately on connect</span><input type="checkbox" id="autoOpen"></label>
-  <label class="sw"><span>Show any Bluetooth device (bikes)</span><input type="checkbox" id="anyDev"></label>
-  <label class="sw"><span>Slow, gentle connect</span><input type="checkbox" id="gentle"></label>
-</section>
-
-<section class="card">
-  <p class="ttl">Map</p>
-  <div id="map"></div>
-  <div class="grid">
-    <button id="locate">Locate me</button>
-    <button id="pinHere">Pin this scooter</button>
-  </div>
-  <p class="hint" id="mapNote">Locate yourself, then pin the scooter so you can find it again.
-    <span id="clearPins">clear pins</span></p>
-</section>
-
-<section class="card hide" id="idcard">
-  <p class="ttl">You are connected to</p>
-  <div class="idname" id="idName">–</div>
-  <p class="ttl" style="margin-top:12px">Code in use</p>
-  <div class="idcode" id="idCode">— — —</div>
-  <p class="hint" id="idNote">Check the code against what's printed under the QR before unlocking.</p>
-  <div class="stats" id="idStats"></div>
-</section>
-
-<section class="card hide" id="panel">
-  <div class="row">
-    <input id="code" placeholder="Code under the QR">
-    <button class="primary" id="open">Open</button>
-  </div>
-  <div class="row" style="margin-top:9px">
-    <input id="atPw" placeholder="AT password (leave blank if unsure)" style="font-size:13px">
-  </div>
-  <div class="row" style="margin-top:9px">
-    <input id="atRaw" placeholder="raw AT command, sent as-is" style="font:12px ui-monospace,Menlo,monospace">
-    <button id="atSend">AT</button>
-  </div>
-  <div class="grid">
-    <button id="scan">Scan QR</button>
-    <button id="lock">Lock</button>
-    <button id="probe">Probe all</button>
-    <button id="read">Read info</button>
-  </div>
-  <div class="grid" style="margin-top:9px">
-    <button id="target">Target: auto</button>
-    <button id="reconnect">Reconnect</button>
-  </div>
-  <div id="cam" class="hide"></div>
-  <div class="stats" id="stats"></div>
-</section>
-
-<section class="card hide" id="fw">
-  <p class="ttl">Firmware</p>
-  <div class="stat" style="margin-top:9px"><u>Status</u><b id="fwStat">idle</b></div>
-  <div class="bar"><div id="fwBar"></div></div>
-
-  <p class="ttl" style="margin-top:16px">Tune image</p>
-  <input id="fwTune" type="file" accept=".bin,.hex,.zip,application/octet-stream">
-  <button class="primary" id="fwTuneGo" style="margin-top:9px">Flash tune image</button>
-
-  <p class="ttl" style="margin-top:16px">Stock image &mdash; the un-brick</p>
-  <input id="fwStock" type="file" accept=".bin,.hex,.zip,application/octet-stream">
-  <button id="fwStockGo" style="margin-top:9px">Flash stock image</button>
-
-  <p class="ttl" style="margin-top:16px">Timing</p>
-  <div class="row">
-    <select id="fwChunk">
-      <option value="16">chunk 16 B</option>
-      <option value="32" selected>chunk 32 B</option>
-      <option value="64">chunk 64 B</option>
-      <option value="128">chunk 128 B</option>
+  <h2>1 · Connect</h2>
+  <label>Device filter
+    <select id="filterMode">
+      <option value="lime">Devices named “lime-…” (recommended)</option>
+      <option value="all">All Bluetooth LE devices</option>
     </select>
-    <select id="fwCs">
-      <option value="sum">checksum: sum</option>
-      <option value="inv" selected>checksum: inverted sum</option>
-      <option value="crc">checksum: crc16</option>
-      <option value="none">checksum: none</option>
+  </label>
+  <label id="prefixWrap">Name prefix
+    <input id="prefix" type="text" value="lime" autocapitalize="off" autocorrect="off" spellcheck="false" />
+  </label>
+  <div class="row">
+    <button id="btnConnect" class="primary">Connect</button>
+    <button id="btnDisconnect" class="ghost" disabled>Disconnect</button>
+  </div>
+  <p class="hint">On iPhone, open this page in <b>Bluefy</b>. Tap Connect → pick your scooter from the list.</p>
+</section>
+
+<section class="card" id="targetCard" hidden>
+  <h2>2 · Target</h2>
+  <label>Write characteristic <select id="writeSel"></select></label>
+  <label>Notify characteristic <select id="notifySel"></select></label>
+  <div class="row">
+    <label class="mini">Write mode
+      <select id="writeMode">
+        <option value="resp">With response</option>
+        <option value="noresp">Without response</option>
+      </select>
+    </label>
+    <label class="mini">Chunk bytes <input id="chunk" type="number" min="1" max="244" value="20" /></label>
+  </div>
+</section>
+
+<section class="card" id="actionCard" hidden>
+  <h2>3 · Unlock</h2>
+  <label>Protocol
+    <select id="protocol">
+      <option value="auto">Auto — try every known format</option>
+      <option value="ascii">App ASCII (ESP32 / custom IoT firmware)</option>
+      <option value="hex">Controller HEX (UART-level)</option>
+      <option value="at">AT command (stock Lime IoT)</option>
     </select>
-  </div>
-
-  <div class="grid" style="margin-top:9px">
-    <button id="fwInfo">Read ESC info</button>
-    <button id="fwReboot">Reboot ESC</button>
-  </div>
-  <p class="hint" id="fwNote">Read ESC info first so you know what you're on. Then flash.
-    Do not lock the screen or switch apps mid-flash.</p>
-</section>
-
-<section class="card hide" id="tune">
-  <p class="ttl">Live</p>
-  <div class="stats">
-    <div class="stat"><u>Speed</u><b id="tSpeed">–</b></div>
-    <div class="stat"><u>Motor power</u><b id="tPow">–</b></div>
-    <div class="stat"><u>Battery</u><b id="tBatt">–</b></div>
-    <div class="stat"><u>Controller</u><b id="tTemp">–</b></div>
-  </div>
-  <p class="ttl" style="margin-top:16px">Speed cap</p>
-  <div class="row" style="margin-top:6px">
-    <input id="cap" type="range" min="10" max="35" step="1" value="25">
-    <span id="capV">25 km/h</span>
-  </div>
+  </label>
   <div class="grid">
-    <button class="primary" id="capSet">Set cap</button>
-    <button id="capOff">Lift cap</button>
+    <button class="big primary" data-action="unlock">Unlock</button>
+    <button class="big" data-action="lock">Lock</button>
+    <button class="big" data-action="beep">Beep</button>
+    <button class="big" data-action="unlockforever">Unlock forever</button>
   </div>
-  <p class="ttl" style="margin-top:16px">Ride mode</p>
-  <div class="grid3">
-    <button class="chip" data-mode="1">Eco</button>
-    <button class="chip" data-mode="0">Normal</button>
-    <button class="chip" data-mode="2">Sport</button>
-  </div>
-  <p class="ttl" style="margin-top:16px">Regen (KERS)</p>
-  <div class="grid4">
-    <button class="chip" data-kers="0">Off</button>
-    <button class="chip" data-kers="1">1</button>
-    <button class="chip" data-kers="2">2</button>
-    <button class="chip" data-kers="3">3</button>
-  </div>
-  <p class="ttl" style="margin-top:16px">Cruise control</p>
-  <div class="grid">
-    <button class="chip" data-cruise="1">On</button>
-    <button class="chip" data-cruise="0">Off</button>
-  </div>
-  <p class="ttl" style="margin-top:16px">Raw register</p>
-  <div class="row" style="margin-top:6px">
-    <input id="rReg" value="73" style="font-family:ui-monospace,Menlo,monospace;text-align:center">
-    <input id="rVal" value="250" style="font-family:ui-monospace,Menlo,monospace;text-align:center">
-    <button id="rRead">R</button>
-    <button id="rWrite">W</button>
-  </div>
-  <div class="grid" style="margin-top:9px">
-    <button id="diag">Diagnose hardware</button>
-    <button id="reboot">Reboot scooter</button>
-  </div>
-  <p class="hint" id="diagOut">Reads ESC magic + firmware to confirm the register map applies.</p>
+  <label class="check"><input type="checkbox" id="hbOn" /> Send heartbeat every 500&nbsp;ms</label>
 </section>
 
-<section class="card">
-  <div class="row" style="margin-bottom:10px">
-    <input id="hex" placeholder="raw hex" style="font-family:ui-monospace,Menlo,monospace;font-size:13px">
-    <button id="send">Send</button>
-  </div>
-  <div id="log"></div>
-  <p class="hint" style="display:flex;justify-content:space-between">
-    <span id="link">no device</span>
-    <span><span id="copy" style="color:var(--lime);margin-right:14px">copy</span>
-    <span id="clear" style="color:var(--lime)">clear</span></span>
-  </p>
-</section>
-</div>
+<details class="card" id="advCard">
+  <summary>Advanced · explorer, custom commands, AT builder, IMEI recovery, log</summary>
+  <div class="dbody">
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+    <h2>Services &amp; characteristics</h2>
+    <div style="overflow:auto;max-height:220px"><table id="svcTable">
+      <thead><tr><th>Service</th><th>Characteristic</th><th>Properties</th></tr></thead>
+      <tbody></tbody>
+    </table></div>
+
+    <div class="sep"></div>
+
+    <h2>Send raw</h2>
+    <label>Format
+      <select id="fmt">
+        <option value="hex">HEX</option>
+        <option value="ascii">ASCII</option>
+      </select>
+    </label>
+    <label>Payload
+      <input id="raw" type="text" placeholder="464316610001F1F28F" autocapitalize="off" autocorrect="off" spellcheck="false" />
+    </label>
+    <label class="check"><input type="checkbox" id="crlf" /> Append CRLF (ASCII only)</label>
+    <div class="row" style="margin-top:10px">
+      <button id="btnSend" class="primary">Send</button>
+      <button id="btnEcho" class="ghost">Send ×3 (paced)</button>
+    </div>
+
+    <div class="sep"></div>
+
+    <h2>AT command builder</h2>
+    <label class="mini">Password <input id="atPass" type="text" placeholder="TOTP / HMAC token" autocapitalize="off" autocorrect="off" spellcheck="false" /></label>
+    <label class="mini">Time <input id="atTime" type="text" placeholder="auto = now" autocapitalize="off" autocorrect="off" spellcheck="false" /></label>
+    <label class="mini">Data (JSON) <input id="atData" type="text" placeholder='{"command":"unlock"}' autocapitalize="off" autocorrect="off" spellcheck="false" /></label>
+    <p class="hint">Form: <code>AT+type,password,time,sequence,data$</code> — type is ATH / QRY / CMD / DBG.</p>
+
+    <div class="sep"></div>
+
+    <h2>Extra service UUIDs (applies on next connect)</h2>
+    <label><textarea id="extraUuids" rows="3" placeholder="0000abcd-0000-1000-8000-00805f9b34fb&#10;one per line or comma separated"></textarea></label>
+
+    <div class="sep"></div>
+
+    <h2>IMEI recovery (beta)</h2>
+    <p class="hint">The 8 hex digits in the BLE name are the last 4 bytes of DES(IMEI, static key). Feed it the first N digits of your IMEI and it brute-forces the rest.</p>
+    <label class="mini">Scooter BLE name <input id="imeiName" type="text" placeholder="lime-1a2b3c4d" autocapitalize="off" autocorrect="off" spellcheck="false" /></label>
+    <label class="mini">IMEI prefix (digits you know, up to 14) <input id="imeiPrefix" type="text" inputmode="numeric" placeholder="e.g. 86123456" autocapitalize="off" autocorrect="off" spellcheck="false" /></label>
+    <button id="btnImei" class="ghost">Recover IMEI</button>
+    <div id="imeiOut" class="res"></div>
+
+    <div class="sep"></div>
+
+    <h2>Log</h2>
+    <div id="log"></div>
+    <div class="row" style="margin-top:10px">
+      <button id="btnClear" class="ghost">Clear</button>
+      <button id="btnCopy" class="ghost">Copy log</button>
+    </div>
+
+  </div>
+</details>
+
+<p class="hint" style="text-align:center">Works in Bluefy (iOS), Chrome &amp; Edge (desktop / Android). Requires HTTPS.</p>
+
 <script>
-const $=s=>document.querySelector(s),enc=new TextEncoder();
-const hex=b=>[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('').toUpperCase();
-const asc=b=>[...new Uint8Array(b)].map(x=>x>31&&x<127?String.fromCharCode(x):'.').join('');
-const sleep=ms=>new Promise(r=>setTimeout(r,ms));
-function log(k,m){const d=document.createElement('div');
-  if(k=='tx')d.innerHTML='<i>&raquo;</i> '+m; else if(k=='rx')d.innerHTML='<b>&laquo;</b> '+m;
-  else d.textContent=m; $('#log').prepend(d);}
-function set(s,t){$('#pill').className='pill'+(s=='on'?' on':s=='busy'?' busy':'');
-  $('#pillTxt').textContent=t;}
-const beep=f=>{try{const a=beep.a||(beep.a=new(window.AudioContext||webkitAudioContext)()),
-  o=a.createOscillator(),g=a.createGain();o.frequency.value=f;o.connect(g);g.connect(a.destination);
-  g.gain.setValueAtTime(.07,a.currentTime);g.gain.exponentialRampToValueAtTime(.001,a.currentTime+.13);
-  o.start();o.stop(a.currentTime+.14);}catch(e){}};
+(() => {
+"use strict";
 
-const SVC=['battery_service','device_information','generic_access','generic_attribute',
- '0000fe95-0000-1000-8000-00805f9b34fb','6e400001-b5a3-f393-e0a9-e50e24dcca9e',
- '0000fee7-0000-1000-8000-00805f9b34fb','0000fee0-0000-1000-8000-00805f9b34fb',
- '0000fff0-0000-1000-8000-00805f9b34fb','0000ffe0-0000-1000-8000-00805f9b34fb',
- '0000ff00-0000-1000-8000-00805f9b34fb','0000fff1-0000-1000-8000-00805f9b34fb',
- '0000fff2-0000-1000-8000-00805f9b34fb','0000fff3-0000-1000-8000-00805f9b34fb',
- '0000180a-0000-1000-8000-00805f9b34fb','0000180f-0000-1000-8000-00805f9b34fb',
- '0000fe59-0000-1000-8000-00805f9b34fb','0000feea-0000-1000-8000-00805f9b34fb',
- '0000feb0-0000-1000-8000-00805f9b34fb','0000fee3-0000-1000-8000-00805f9b34fb'];
+/* ─────────────── elements ─────────────── */
+const $ = s => document.querySelector(s);
+const logEl = $('#log');
+const statusEl = $('#status');
 
-let dev=null,wr=[],chars=[],pipe=null,gotReply=false,wantConnected=false,retry=0,targetMode=0;
-let upAt=0,fastDrops=0,seq=0,rxCount=0,busy=false,flashing=false;
+/* ─────────────── candidate GATT services ─────────────── */
+const CANDIDATE_SERVICES = [
+  '6e400001-b5a3-f393-e0a9-e50e24dcca9e', // Nordic UART
+  '0000ffe0-0000-1000-8000-00805f9b34fb', // HM-10 / BT05
+  '0000ffe5-0000-1000-8000-00805f9b34fb',
+  '0000ffe9-0000-1000-8000-00805f9b34fb',
+  '0000fff0-0000-1000-8000-00805f9b34fb',
+  '0000ff00-0000-1000-8000-00805f9b34fb',
+  '49535343-fe7d-4ae5-8fa9-9fafd205e455', // Microchip / ISSC transparent UART
+  '0000fee7-0000-1000-8000-00805f9b34fb',
+  '0000fee9-0000-1000-8000-00805f9b34fb',
+  '0000fe59-0000-1000-8000-00805f9b34fb',
+  '0000fe95-0000-1000-8000-00805f9b34fb',
+  '0000180a-0000-1000-8000-00805f9b34fb',
+  '0000180f-0000-1000-8000-00805f9b34fb'
+];
 
-const autoOpen=$('#autoOpen'),anyDev=$('#anyDev'),gentle=$('#gentle');
-const loadSw=(el,k)=>{el.checked=localStorage.getItem(k)==='1';el.onchange=()=>localStorage.setItem(k,el.checked?'1':'0');};
-loadSw(autoOpen,'lf_auto');loadSw(anyDev,'lf_any');loadSw(gentle,'lf_gentle');
-
-const IOS=/iPad|iPhone|iPod/.test(navigator.userAgent)||
-  (navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
-if(!navigator.bluetooth)$('#btWarn').classList.remove('hide');
-const slow=()=>IOS||gentle.checked;
-
-/* ================= map ================= */
-let map=null,meDot=null,pins=[];
-function initMap(){
-  if(map)return true;
-  if(typeof L==='undefined'){ $('#mapNote').textContent='map library not loaded'; return false; }
-  map=L.map('map',{zoomControl:true,attributionControl:false}).setView([0,0],2);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(map);
-  try{ pins=JSON.parse(localStorage.getItem('lf_pins')||'[]'); }catch(e){ pins=[]; }
-  pins.forEach(addPin);
-  setTimeout(()=>map.invalidateSize(),250);
-  return true;
-}
-function addPin(p){
-  if(!map)return null;
-  return L.circleMarker([p.lat,p.lng],{radius:8,color:'#00e07a',weight:2,fillColor:'#00e07a',fillOpacity:.35})
-    .addTo(map).bindPopup(p.label||'scooter');
-}
-function here(cb){
-  if(!navigator.geolocation){ $('#mapNote').textContent='no geolocation'; return; }
-  navigator.geolocation.getCurrentPosition(
-    p=>cb(p.coords.latitude,p.coords.longitude),
-    e=>$('#mapNote').textContent='location: '+e.message,
-    {enableHighAccuracy:true,timeout:9000,maximumAge:5000});
-}
-$('#locate').onclick=()=>{
-  if(!initMap())return;
-  $('#mapNote').textContent='locating…';
-  here((la,lo)=>{
-    if(meDot)meDot.setLatLng([la,lo]);
-    else meDot=L.circleMarker([la,lo],{radius:7,color:'#3b82f6',weight:3,fillColor:'#3b82f6',fillOpacity:.5}).addTo(map);
-    map.setView([la,lo],17);
-    $('#mapNote').textContent='you are here';
-  });
+/* ─────────────── command payloads ─────────────── */
+const ASCII_ACTIONS = { unlock:'unlock', lock:'lock', beep:'alarm', unlockforever:'unlockforever' };
+const HEX_ACTIONS = {
+  unlock:        '464316610001F1F28F',
+  lock:          '464316610001F0E2AE',
+  beep:          '464316130001F15D92',
+  unlockforever: '464316610001F1F28F'
 };
-$('#pinHere').onclick=()=>{
-  if(!initMap())return;
-  $('#mapNote').textContent='locating…';
-  here((la,lo)=>{
-    const label=(dev&&dev.name)||$('#code').value.trim().toUpperCase()||'scooter';
-    const rec={lat:la,lng:lo,label};
-    pins.push(rec); localStorage.setItem('lf_pins',JSON.stringify(pins));
-    const m=addPin(rec); if(m)m.openPopup();
-    map.setView([la,lo],18);
-    $('#mapNote').textContent='pinned '+label;
-  });
-};
-$('#clearPins').onclick=()=>{
-  pins=[]; localStorage.setItem('lf_pins','[]');
-  if(map){ map.eachLayer(l=>{ if(l instanceof L.CircleMarker && l!==meDot) map.removeLayer(l); }); }
-  $('#mapNote').textContent='pins cleared';
-};
+const HEARTBEAT_HEX = '4643110100084C494D4542494B45BE8A';
 
-/* ============ framing ============ */
-const APP=0x3D,ESC=0x20;
-const CMDS={0x01:'read',0x02:'write',0x03:'write!',0x04:'read-reply',0x05:'write-reply',
-  0x07:'fw-start',0x08:'fw-write',0x09:'fw-finish',0x0A:'reboot',0x0B:'fw-ack',0x18:'set-serial'};
-const frame=(cmd,arg=0,pl=[],src=APP,dst=ESC)=>{
-  const body=[src,dst,cmd,arg,...pl],len=pl.length;
-  const sum=[len,...body].reduce((a,b)=>a+b,0)&0xFFFF;
-  const ck=(0xFFFF-sum)&0xFFFF;
-  return [0x5A,0xA5,len,...body,ck&0xFF,ck>>8];
-};
-const readReg =(off,len=2,silent)=>send(frame(0x01,off,[len]),silent);
-const writeReg=(off,val,silent)=>send(frame(0x02,off,[val&0xFF,(val>>8)&0xFF]),silent);
-const pending=new Map();
-function readRegA(off,len=2,timeout=1200){
-  return new Promise(res=>{const to=setTimeout(()=>{pending.delete(off);res(null);},timeout);
-    pending.set(off,v=>{clearTimeout(to);pending.delete(off);res(v);});readReg(off,len,true);});
-}
-const now=()=>Math.floor(Date.now()/1000);
-const atPw=()=>$('#atPw').value.trim();
-const AT=(d,p=null,term='$')=>`AT+CMD,${p===null?atPw():p},${now()},0,${d}${term}`;
-const j=o=>JSON.stringify(o);
+/* ─────────────── state ─────────────── */
+let device = null, server = null, writeChar = null, notifyChar = null;
+let hbTimer = null, seq = 0;
 
-const OPEN=code=>{
-  seq=(seq+1)&0xFF;
-  const L=[];
-  if(code){
-    L.push(AT(j({type:'unlock',code})));
-    L.push(AT(j({type:'unlock',code}),'0'));
-    L.push(`AT+CMD,${atPw()},${now()},${seq},${j({type:'unlock',code})}$`);
-  }
-  L.push(AT(j({type:'unlock'})));
-  L.push(AT(j({type:'unlock'}),'0'));
-  L.push(`AT+CMD,${atPw()},${now()},${seq},${j({type:'unlock'})}$`);
-  L.push(AT(j({cmd:'unlock'})));
-  L.push(frame(0x02,0x71,[1,0]));
-  L.push(frame(0x01,0x00,[2]));
-  return L;
-};
-const SHUT=()=>[AT(j({type:'lock'})),frame(0x02,0x70,[1,0])];
-
-/* ============ transport ============ */
-async function writeTo(c,d){
-  if(c.properties.write){ await c.writeValue(d); return; }
-  for(let i=0;i<d.length;i+=20){ await c.writeValueWithoutResponse(d.slice(i,i+20)); await sleep(22); }
-}
-function targets(){ return (targetMode===0?(pipe?[pipe]:wr):targetMode===1?(pipe?[pipe]:[]):wr); }
-async function send(b,silent){
-  const d=typeof b=='string'?enc.encode(b):new Uint8Array(b);
-  if(!silent)log('tx',hex(d)+(typeof b=='string'?' &nbsp;'+b:'')+' <span style="opacity:.45">'+d.length+'B</span>');
-  for(const c of targets()){
-    try{ await writeTo(c,d); if(slow())await sleep(50); }
-    catch(e){ if(!silent)log('','write failed '+c.uuid.slice(4,8)+': '+e.message); }
-  }
-}
-async function fire(list,repeat=1){
-  busy=true; set('busy','sending');
-  const before=rxCount;
-  for(let r=0;r<repeat;r++){
-    for(const f of list){ await send(f); await sleep(slow()?480:340); }
-    if(r<repeat-1) await sleep(450);
-  }
-  busy=false; set('on','sent');beep(920);
-  setTimeout(()=>{
-    if(rxCount===before) log('','!! no reply from the scooter — frames may not be reaching its parser');
-    else log('','reply seen ('+(rxCount-before)+' frames)');
-  },2600);
-}
-
-/* ============ inbound ============ */
-const TEL={0x22:'batt',0x26:'speed',0xBD:'pow',0x3E:'temp'};
-const tel={};
-function drawTel(){
-  $('#tSpeed').textContent = tel.speed===undefined?'–':(tel.speed/10).toFixed(1)+' km/h';
-  $('#tPow').textContent   = tel.pow  ===undefined?'–':tel.pow+' W';
-  $('#tBatt').textContent  = tel.batt ===undefined?'–':tel.batt+'%';
-  $('#tTemp').textContent  = tel.temp ===undefined?'–':(tel.temp/10).toFixed(0)+'°C';
-}
-function parse(u){
-  if(u[0]!==0x5A||u[1]!==0xA5){log('rx',hex(u)+' &nbsp;'+asc(u));return;}
-  gotReply=true; rxCount++;
-  const cmd=u[5],arg=u[6],pl=[...u.slice(7,7+u[2])];
-  const v=pl.length>=2?((pl[0]|(pl[1]<<8))<<16>>16):(pl[0]||0);
-  const t=TEL[arg];
-  if(t&&cmd===0x04){ if(tel[t]!==v){tel[t]=v;drawTel();} }
-  else log('rx',hex(u)+' &nbsp;'+asc(u)+' &nbsp;'+(CMDS[cmd]||('cmd 0x'+cmd.toString(16)))+
-    ' reg 0x'+arg.toString(16).padStart(2,'0')+' = '+v);
-  if(pending.has(arg)){const f=pending.get(arg);pending.delete(arg);f(v);}
-  if(arg===0x73&&v>50&&v<600){$('#cap').value=Math.round(v/10);$('#capV').textContent=Math.round(v/10)+' km/h';}
-}
-
-/* ============ link ============ */
-let ka=null,wake=null;
-const startKA=()=>{stopKA();ka=setInterval(async()=>{
-  if(busy||flashing||!dev||!dev.gatt.connected)return;
-  busy=true; try{ await readReg(0x22,2,true); }catch(e){} busy=false;
-},slow()?1600:2200);};
-const stopKA=()=>{if(ka)clearInterval(ka);ka=null;};
-async function keepAwake(){
-  if(!('wakeLock' in navigator))return;
-  try{ wake=await navigator.wakeLock.request('screen'); }catch(e){}
-}
-document.addEventListener('visibilitychange',()=>{
-  if(document.visibilityState!=='visible')return;
-  keepAwake();
-  if(dev&&wantConnected&&!dev.gatt.connected){ retry=0; fastDrops=0; link(false); }
-});
-
-async function pickDevice(){
-  if(anyDev.checked){
-    try{ return await navigator.bluetooth.requestDevice({acceptAllDevices:true,optionalServices:SVC}); }
-    catch(e){ log('','acceptAllDevices unsupported — using the Lime filter'); }
-  }
-  return navigator.bluetooth.requestDevice({filters:[{namePrefix:'Lime'}],optionalServices:SVC});
-}
-
-async function enumerate(s){
-  const prim=await s.getPrimaryServices();
-  wr=[];chars=[];
-  const subs=[],map=[];
-  for(const sv of prim){
-    const cs=await sv.getCharacteristics();
-    map.push(sv.uuid.slice(4,8)+'  service');
-    for(const c of cs){
-      chars.push(c);
-      const p=[];
-      if(c.properties.read)p.push('r');
-      if(c.properties.write)p.push('W');
-      if(c.properties.writeWithoutResponse)p.push('w');
-      if(c.properties.notify)p.push('n');
-      if(c.properties.indicate)p.push('i');
-      map.push('   '+c.uuid.slice(4,8)+'  ['+p.join('')+']');
-      if(c.properties.write||c.properties.writeWithoutResponse)wr.push(c);
-      if(c.properties.notify||c.properties.indicate)subs.push(c);
-    }
-  }
-  const bind=c=>c.addEventListener('characteristicvaluechanged',
-    e=>parse(new Uint8Array(e.target.value.buffer)));
-  if(slow()){
-    for(const c of subs){ try{ await c.startNotifications(); bind(c); await sleep(70); }catch(e){} }
-  }else{
-    await Promise.allSettled(subs.map(async c=>{
-      try{ await c.startNotifications(); bind(c); }catch(e){}
-    }));
-  }
-  log('','linked · '+prim.length+' svc · '+wr.length+' writable · '+subs.length+' notify');
-  map.forEach(m=>log('',m));
-}
-
-async function identify(){
-  pipe=null;
-  const seen=new Set(),cand=[];
-  for(const c of wr){ if(!seen.has(c.uuid)){seen.add(c.uuid);cand.push(c);} }
-  for(const c of cand.slice(0,5)){
-    gotReply=false;
-    try{ await writeTo(c,new Uint8Array(frame(0x01,0x00,[2]))); }catch(e){ continue; }
-    await sleep(slow()?400:280);
-    if(gotReply){ pipe=c; log('','pipe → '+c.uuid.slice(4,8)); return; }
-  }
-  log('','no reply to probes — frames go to all writable');
-}
-
-async function link(initial){
-  try{
-    const s=await dev.gatt.connect();
-    upAt=Date.now();
-    if(slow()){ set('busy','settling'); await sleep(1500); }
-    await enumerate(s);
-    retry=0; wantConnected=true;
-    set('on','connected'); beep(660);
-    ['panel','idcard','tune','fw'].forEach(i=>$('#'+i).classList.remove('hide'));
-    startKA(); keepAwake();
-    setTimeout(()=>harvest(),slow()?900:400);
-    setTimeout(()=>{ if(!pipe)identify(); },slow()?2200:1200);
-    if(autoOpen.checked) setTimeout(()=>$('#open').click(),slow()?3200:1800);
-    return true;
-  }catch(e){ log('','link failed: '+e.message); return false; }
-}
-
-$('#connect').onclick=async()=>{
-  if(dev&&dev.gatt.connected)return;
-  if(dev){ await link(false); return; }
-  try{ set('busy','picking'); dev=await pickDevice(); }
-  catch(e){ set('','offline'); return; }
-  $('#link').textContent=dev.name||'Lime scooter';
-  dev.addEventListener('gattserverdisconnected',async()=>{
-    stopKA();
-    const dur=Date.now()-upAt;
-    if(dur<3000)fastDrops++; else fastDrops=0;
-    log('','disconnected'+(fastDrops>1?(' (fast drop '+fastDrops+')'):''));
-    if(flashing) log('','!! DROPPED MID-FLASH — old firmware is usually still intact; re-flash from the start');
-    if(!wantConnected){ set('','offline'); return; }
-    while(wantConnected&&retry<12){
-      retry++;
-      const wait=Math.min(600*Math.pow(1.55,retry-1)+fastDrops*800,8000);
-      set('busy','retry '+retry);
-      await sleep(wait);
-      log('','reconnect '+retry+' after '+Math.round(wait)+'ms');
-      if(await link(false)){ log('','back online'); return; }
-    }
-    set('','offline'); log('','gave up — tap the pill to retry');
-  });
-  await link(true);
-};
-$('#pill').onclick=()=>{
-  if(dev&&dev.gatt.connected){ wantConnected=false; stopKA(); dev.gatt.disconnect(); set('','offline'); }
-  else if(dev){ wantConnected=true; retry=0; fastDrops=0; link(false); }
-};
-$('#reconnect').onclick=()=>{ wantConnected=true; retry=0; fastDrops=0; link(false); };
-
-/* ============ identity ============ */
-function showCode(c){ $('#idCode').textContent = c ? c : '— — —'; }
-async function harvest(){
-  if(busy)return;
-  busy=true;
-  $('#idName').textContent = dev.name || 'unknown scooter';
-  const stats=[]; let guess=null;
-  for(const c of chars){
-    if(!c.properties.read)continue;
-    let v; try{ v=await c.readValue(); }catch(e){ continue; }
-    const raw=new Uint8Array(v.buffer), s=asc(raw).trim();
-    if(c.uuid.startsWith('00002a25')) stats.push(['Serial',s]);
-    if(c.uuid.startsWith('00002a26')) stats.push(['Firmware',s]);
-    if(c.uuid.startsWith('00002a19')) stats.push(['Battery',raw[0]+'%']);
-    if(c.uuid.startsWith('00002a24')) stats.push(['Model',s]);
-    const m=s.match(/[A-Z0-9]{6}/);
-    if(m&&!guess&&s!=='') guess=m[0];
-    if(slow())await sleep(60);
-  }
-  $('#idStats').innerHTML=stats.map(([k,v])=>`<div class="stat"><u>${k}</u><b>${v||'–'}</b></div>`).join('');
-  showCode($('#code').value.trim().toUpperCase()||guess);
-  busy=false;
-}
-
-/* ============ buttons ============ */
-$('#open').onclick=()=>{
-  const c=$('#code').value.trim().toUpperCase();
-  showCode(c);
-  fire(OPEN(c),c?2:1);
-};
-$('#lock').onclick=()=>fire(SHUT());
-$('#probe').onclick=()=>fire([...OPEN($('#code').value.trim().toUpperCase()),...SHUT()]);
-$('#code').oninput=()=>showCode($('#code').value.trim().toUpperCase());
-$('#atSend').onclick=()=>{const t=$('#atRaw').value.trim();if(t)send(t);};
-$('#read').onclick=async()=>{let html='';
-  for(const c of chars){if(!c.properties.read)continue;
-    try{const v=await c.readValue();
-      if(c.uuid.startsWith('00002a19'))html+=`<div class="stat"><u>Battery</u><b>${v.getUint8(0)}%</b></div>`;
-      if(c.uuid.startsWith('00002a26'))html+=`<div class="stat"><u>Firmware</u><b>${asc(v.buffer)}</b></div>`;
-      if(c.uuid.startsWith('00002a25'))html+=`<div class="stat"><u>Serial</u><b>${asc(v.buffer)}</b></div>`;
-      log('',c.uuid.slice(4,8)+' = '+hex(v.buffer)+' &nbsp;'+asc(v.buffer));
-    }catch(e){}}
-  if(html)$('#stats').innerHTML=html;};
-
-$('#scan').onclick=async()=>{
-  if(typeof jsQR!=='function'){ log('','QR library not loaded yet — try again in a second'); return; }
-  let st; try{ st=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}}}); }
-  catch(e){ log('','camera: '+e.message); return; }
-  const track=st.getVideoTracks()[0];
-  let caps={}; try{ caps=track.getCapabilities?track.getCapabilities():{}; }catch(e){}
-  let live=true, torchOn=false;
-  const v=document.createElement('video');
-  v.playsInline=true; v.autoplay=true; v.muted=true; v.srcObject=st;
-  $('#cam').replaceChildren(v);
-  const fb=document.createElement('button');
-  fb.textContent='Flash off'; fb.style.marginTop='9px';
-  if(caps.torch)$('#cam').appendChild(fb);
-  fb.onclick=async e=>{ e.stopPropagation(); torchOn=!torchOn;
-    try{ await track.applyConstraints({advanced:[{torch:torchOn}]}); }catch(err){}
-    fb.textContent='Flash '+(torchOn?'on':'off');
-    fb.style.color=torchOn?'var(--lime)':''; };
-  v.onclick=()=>{ live=false; st.getTracks().forEach(t=>t.stop()); $('#cam').classList.add('hide'); };
-  $('#cam').classList.remove('hide');
-  log('','camera on — tap the video to cancel');
-  try{ await v.play(); }catch(e){}
-  const cv=document.createElement('canvas'),cx=cv.getContext('2d',{willReadFrequently:true});
-  (function tick(){
-    if(!live)return;
-    if(!v.videoWidth)return requestAnimationFrame(tick);
-    const w=Math.min(v.videoWidth,560);
-    const h=Math.round(v.videoHeight*(w/v.videoWidth));
-    cv.width=w;cv.height=h;cx.drawImage(v,0,0,w,h);
-    const d=cx.getImageData(0,0,w,h);
-    let r=null; try{ r=jsQR(d.data,w,h,{inversionAttempts:'dontInvert'}); }catch(e){}
-    if(r&&r.data){
-      live=false; st.getTracks().forEach(t=>t.stop()); $('#cam').classList.add('hide');
-      log('','QR → '+r.data);
-      const seg=r.data.split(/[\/=]/).filter(Boolean).pop().replace(/[^A-Z0-9]/gi,'').toUpperCase();
-      if(seg){ $('#code').value=seg; showCode(seg); }
-      beep(1100); $('#open').click();
-    }
-    else requestAnimationFrame(tick);
-  })();
-};
-
-$('#send').onclick=()=>{const h=$('#hex').value.replace(/[^0-9a-f]/gi,'');
-  if(h.length%2)return;const a=[];for(let i=0;i<h.length;i+=2)a.push(parseInt(h.substr(i,2),16));send(a);};
-$('#clear').onclick=()=>$('#log').replaceChildren();
-$('#copy').onclick=()=>{
-  const t=[...$('#log').children].reverse().map(d=>d.textContent).join('\n');
-  const ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();
-  try{document.execCommand('copy');}catch(e){} ta.remove();
-  $('#copy').textContent='copied'; setTimeout(()=>$('#copy').textContent='copy',1200);
-};
-$('#target').onclick=()=>{targetMode=(targetMode+1)%3;
-  $('#target').textContent='Target: '+['auto','pipe','all'][targetMode];};
-
-/* ============ firmware ============ */
-let fwTune=null,fwTuneName='',fwStock=null,fwStockName='';
-const fwStat=t=>$('#fwStat').textContent=t;
-const fwPct=p=>$('#fwBar').style.width=Math.max(0,Math.min(100,p*100)).toFixed(1)+'%';
-
-async function loadFile(input){
-  const f=input.files&&input.files[0];
-  if(!f)return null;
-  const b=new Uint8Array(await f.arrayBuffer());
-  log('','image loaded: '+f.name+' — '+b.length+' bytes');
-  return b;
-}
-$('#fwTune').onchange=async()=>{
-  fwTune=await loadFile($('#fwTune'));
-  if(fwTune) fwTuneName=$('#fwTune').files[0].name;
-  fwStat(fwTune?(fwTuneName+' · '+fwTune.length+' B'):'idle');
-};
-$('#fwStock').onchange=async()=>{
-  fwStock=await loadFile($('#fwStock'));
-  if(fwStock) fwStockName=$('#fwStock').files[0].name;
-  fwStat(fwStock?(fwStockName+' · '+fwStock.length+' B'):'idle');
-};
-
-function cs16(b,kind){
-  if(kind==='none')return [0,0];
-  if(kind==='crc'){
-    let c=0xFFFF;
-    for(const x of b){ c^=x; for(let i=0;i<8;i++) c=(c&1)?((c>>>1)^0xA001):(c>>>1); }
-    return [c&0xFF,(c>>>8)&0xFF];
-  }
-  let s=0; for(const x of b) s=(s+x)&0xFFFF;
-  if(kind==='inv') s=(0xFFFF-s)&0xFFFF;
-  return [s&0xFF,s>>8];
-}
-
-async function doFlash(bytes,label){
-  if(flashing){ log('','already flashing'); return; }
-  if(!bytes||!bytes.length){ log('','no image loaded'); return; }
-  if(!dev||!dev.gatt.connected){ log('','not connected'); return; }
-  flashing=true; busy=true;
-  const CHUNK=+$('#fwChunk').value, kind=$('#fwCs').value;
-  const total=Math.ceil(bytes.length/CHUNK);
-  fwStat('flashing '+label); fwPct(0);
-  log('','=== FLASH '+label+' — '+bytes.length+' B, '+total+' chunks of '+CHUNK+' B ===');
-  log('','=== do not lock the screen or leave the app ===');
-  try{ await keepAwake(); }catch(e){}
-  const t0=Date.now();
-  try{
-    await send(frame(0x07,0,[bytes.length&255,(bytes.length>>8)&255,
-      (bytes.length>>16)&255,(bytes.length>>24)&255]),true);
-    await sleep(250);
-    let idx=0;
-    for(let off=0;off<bytes.length;off+=CHUNK){
-      await send(frame(0x08,idx&0xFF,[...bytes.slice(off,off+CHUNK)]),true);
-      idx++;
-      if(idx%16===0){
-        fwPct(off/bytes.length);
-        fwStat('writing '+Math.round(off/bytes.length*100)+'%  ('+idx+'/'+total+')');
-      }
-    }
-    fwPct(0.98); fwStat('finishing…');
-    await send(frame(0x09,0,cs16(bytes,kind)),true);
-    await sleep(400);
-    fwPct(1);
-    const secs=((Date.now()-t0)/1000).toFixed(0);
-    fwStat('done in '+secs+'s — rebooting');
-    log('','=== flash finished in '+secs+'s, sending reboot ===');
-    await send(frame(0x0A,0,[]),true);
-    beep(1200);
-  }catch(e){
-    log('','FLASH FAILED: '+e.message);
-    fwStat('failed — old firmware usually still intact');
-  }finally{
-    flashing=false; busy=false;
-  }
-}
-$('#fwTuneGo').onclick =()=>doFlash(fwTune,fwTuneName||'tune');
-$('#fwStockGo').onclick=()=>doFlash(fwStock,fwStockName||'stock');
-
-$('#fwInfo').onclick=async()=>{
-  fwStat('reading…');
-  const fw=await readRegA(0x1A), sn=await readRegA(0x10,14), magic=await readRegA(0x00);
-  const snTxt=(()=>{let s='';try{s=asc(new Uint8Array([sn&255,sn>>8]));}catch(e){}
-    return sn===null?'–':('0x'+(sn>>>0).toString(16).toUpperCase());})();
-  fwStat('fw '+(fw===null?'?':fw)+' · magic '+(magic===null?'?':'0x'+(magic>>>0).toString(16).toUpperCase()));
-  log('','ESC info — magic '+(magic===null?'none':'0x'+(magic>>>0).toString(16))+
-    ' · fw ver '+(fw===null?'none':fw)+' · sn reg '+(sn===null?'none':snTxt));
-  if(fw!==null){
-    const rec={name:dev&&dev.name,at:new Date().toISOString(),fw,magic};
-    try{ const a=JSON.parse(localStorage.getItem('lf_esc')||'[]'); a.push(rec);
-      localStorage.setItem('lf_esc',JSON.stringify(a.slice(-40))); }catch(e){}
-    log('','saved to ESC history');
-  }
-};
-$('#fwReboot').onclick=()=>send(frame(0x0A,0,[]));
-
-/* ============ tuning ============ */
-const cap=$('#cap');
-cap.oninput=()=>$('#capV').textContent=cap.value+' km/h';
-$('#capSet').onclick=async()=>{const k=+cap.value;busy=true;set('busy','writing');
-  await writeReg(0x73,Math.round(k*10));await sleep(200);await readReg(0x73);busy=false;set('on','cap '+k);beep(880);};
-$('#capOff').onclick=async()=>{busy=true;set('busy','writing');
-  await writeReg(0x72,1);await sleep(200);await readReg(0x72);busy=false;set('on','cap lifted');beep(880);};
-document.querySelectorAll('.chip').forEach(b=>b.onclick=async()=>{
-  b.parentElement.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));
-  b.classList.add('on'); busy=true;
-  if(b.dataset.mode   !==undefined)await writeReg(0x75,+b.dataset.mode);
-  if(b.dataset.kers   !==undefined)await writeReg(0x7B,+b.dataset.kers);
-  if(b.dataset.cruise !==undefined)await writeReg(0x7C,+b.dataset.cruise);
-  busy=false; beep(880);
-});
-const rh=()=>parseInt($('#rReg').value.replace(/[^0-9a-f]/gi,''),16);
-$('#rRead').onclick =()=>{const r=rh();if(!isNaN(r))readReg(r);};
-$('#rWrite').onclick=()=>{const r=rh(),v=+$('#rVal').value;if(!isNaN(r)&&!isNaN(v))writeReg(r,v);};
-$('#reboot').onclick=()=>writeReg(0x78,1);
-$('#diag').onclick=async()=>{
-  const out=$('#diagOut');out.textContent='reading magic + firmware…';
-  const magic=await readRegA(0x00);
-  if(magic===null){out.innerHTML='<b>no reply</b> — not a Ninebot-family ESC, or frames land on the wrong pipe. Try Target: all.';return;}
-  const fw=await readRegA(0x1A);
-  out.innerHTML='magic <b>0x'+(magic>>>0).toString(16).toUpperCase().padStart(4,'0')+'</b>'+
-    (magic===0x5C51?' ✓ register map applies':' (expected 5C51)')+(fw!==null?' · ESC fw <b>'+fw+'</b>':'');
-};
-
-log('','ready — connect to begin');
-</script>
-</body>
-</html>
+/* ─────────────── helpers ─────────────── */
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const clamp = (v,a,b) => Math.min(b, Math.max(a,v));
+const toHex = b => Array.from(b).map(x => x.toString(16).padStart(2,'0').toUpperCase()).join
