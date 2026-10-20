@@ -39,9 +39,10 @@ button:active{transform:scale(.98)}button:disabled{opacity:.4}
 .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:9px}
 .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-top:9px}
 .row{display:flex;gap:9px;align-items:center}
-input{flex:1;min-width:0;background:#0e1211;border:1px solid var(--line);color:var(--fg);
+input,select{flex:1;min-width:0;background:#0e1211;border:1px solid var(--line);color:var(--fg);
  border-radius:13px;padding:14px;font:inherit}
 input::placeholder{color:#5d6865}
+input[type=file]{padding:11px;font-size:12px}
 .row button{width:auto;padding-left:18px;padding-right:18px}
 .hint{font-size:12px;color:var(--dim);margin:10px 0 0}.hint b{color:#a9b6b1}
 .stats{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:10px}
@@ -76,6 +77,8 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
 #map{height:220px;border-radius:13px;margin-top:9px;background:#0e1211}
 .leaflet-container{background:#0e1211;font:inherit}
 #clearPins{color:var(--lime)}
+.bar{height:8px;background:#0e1211;border:1px solid var(--line);border-radius:999px;margin-top:10px;overflow:hidden}
+.bar div{height:100%;width:0;background:var(--lime);transition:width .15s}
 </style>
 </head>
 <body>
@@ -143,6 +146,43 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
   </div>
   <div id="cam" class="hide"></div>
   <div class="stats" id="stats"></div>
+</section>
+
+<section class="card hide" id="fw">
+  <p class="ttl">Firmware</p>
+  <div class="stat" style="margin-top:9px"><u>Status</u><b id="fwStat">idle</b></div>
+  <div class="bar"><div id="fwBar"></div></div>
+
+  <p class="ttl" style="margin-top:16px">Tune image</p>
+  <input id="fwTune" type="file" accept=".bin,.hex,.zip,application/octet-stream">
+  <button class="primary" id="fwTuneGo" style="margin-top:9px">Flash tune image</button>
+
+  <p class="ttl" style="margin-top:16px">Stock image &mdash; the un-brick</p>
+  <input id="fwStock" type="file" accept=".bin,.hex,.zip,application/octet-stream">
+  <button id="fwStockGo" style="margin-top:9px">Flash stock image</button>
+
+  <p class="ttl" style="margin-top:16px">Timing</p>
+  <div class="row">
+    <select id="fwChunk">
+      <option value="16">chunk 16 B</option>
+      <option value="32" selected>chunk 32 B</option>
+      <option value="64">chunk 64 B</option>
+      <option value="128">chunk 128 B</option>
+    </select>
+    <select id="fwCs">
+      <option value="sum">checksum: sum</option>
+      <option value="inv" selected>checksum: inverted sum</option>
+      <option value="crc">checksum: crc16</option>
+      <option value="none">checksum: none</option>
+    </select>
+  </div>
+
+  <div class="grid" style="margin-top:9px">
+    <button id="fwInfo">Read ESC info</button>
+    <button id="fwReboot">Reboot ESC</button>
+  </div>
+  <p class="hint" id="fwNote">Read ESC info first so you know what you're on. Then flash.
+    Do not lock the screen or switch apps mid-flash.</p>
 </section>
 
 <section class="card hide" id="tune">
@@ -236,7 +276,7 @@ const SVC=['battery_service','device_information','generic_access','generic_attr
  '0000feb0-0000-1000-8000-00805f9b34fb','0000fee3-0000-1000-8000-00805f9b34fb'];
 
 let dev=null,wr=[],chars=[],pipe=null,gotReply=false,wantConnected=false,retry=0,targetMode=0;
-let upAt=0,fastDrops=0,seq=0,rxCount=0,busy=false;
+let upAt=0,fastDrops=0,seq=0,rxCount=0,busy=false,flashing=false;
 
 const autoOpen=$('#autoOpen'),anyDev=$('#anyDev'),gentle=$('#gentle');
 const loadSw=(el,k)=>{el.checked=localStorage.getItem(k)==='1';el.onchange=()=>localStorage.setItem(k,el.checked?'1':'0');};
@@ -301,6 +341,8 @@ $('#clearPins').onclick=()=>{
 
 /* ============ framing ============ */
 const APP=0x3D,ESC=0x20;
+const CMDS={0x01:'read',0x02:'write',0x03:'write!',0x04:'read-reply',0x05:'write-reply',
+  0x07:'fw-start',0x08:'fw-write',0x09:'fw-finish',0x0A:'reboot',0x0B:'fw-ack',0x18:'set-serial'};
 const frame=(cmd,arg=0,pl=[],src=APP,dst=ESC)=>{
   const body=[src,dst,cmd,arg,...pl],len=pl.length;
   const sum=[len,...body].reduce((a,b)=>a+b,0)&0xFFFF;
@@ -381,7 +423,8 @@ function parse(u){
   const v=pl.length>=2?((pl[0]|(pl[1]<<8))<<16>>16):(pl[0]||0);
   const t=TEL[arg];
   if(t&&cmd===0x04){ if(tel[t]!==v){tel[t]=v;drawTel();} }
-  else log('rx',hex(u)+' &nbsp;'+asc(u)+' &nbsp;reg 0x'+arg.toString(16).padStart(2,'0')+' = '+v);
+  else log('rx',hex(u)+' &nbsp;'+asc(u)+' &nbsp;'+(CMDS[cmd]||('cmd 0x'+cmd.toString(16)))+
+    ' reg 0x'+arg.toString(16).padStart(2,'0')+' = '+v);
   if(pending.has(arg)){const f=pending.get(arg);pending.delete(arg);f(v);}
   if(arg===0x73&&v>50&&v<600){$('#cap').value=Math.round(v/10);$('#capV').textContent=Math.round(v/10)+' km/h';}
 }
@@ -389,7 +432,7 @@ function parse(u){
 /* ============ link ============ */
 let ka=null,wake=null;
 const startKA=()=>{stopKA();ka=setInterval(async()=>{
-  if(busy||!dev||!dev.gatt.connected)return;
+  if(busy||flashing||!dev||!dev.gatt.connected)return;
   busy=true; try{ await readReg(0x22,2,true); }catch(e){} busy=false;
 },slow()?1600:2200);};
 const stopKA=()=>{if(ka)clearInterval(ka);ka=null;};
@@ -465,17 +508,13 @@ async function link(initial){
     await enumerate(s);
     retry=0; wantConnected=true;
     set('on','connected'); beep(660);
-    $('#panel').classList.remove('hide'); $('#idcard').classList.remove('hide'); $('#tune').classList.remove('hide');
+    ['panel','idcard','tune','fw'].forEach(i=>$('#'+i).classList.remove('hide'));
     startKA(); keepAwake();
-    // stagger the background work so the link is not hammered the moment it comes up
     setTimeout(()=>harvest(),slow()?900:400);
     setTimeout(()=>{ if(!pipe)identify(); },slow()?2200:1200);
     if(autoOpen.checked) setTimeout(()=>$('#open').click(),slow()?3200:1800);
     return true;
-  }catch(e){
-    log('','link failed: '+e.message);
-    return false;
-  }
+  }catch(e){ log('','link failed: '+e.message); return false; }
 }
 
 $('#connect').onclick=async()=>{
@@ -489,8 +528,8 @@ $('#connect').onclick=async()=>{
     const dur=Date.now()-upAt;
     if(dur<3000)fastDrops++; else fastDrops=0;
     log('','disconnected'+(fastDrops>1?(' (fast drop '+fastDrops+')'):''));
+    if(flashing) log('','!! DROPPED MID-FLASH — old firmware is usually still intact; re-flash from the start');
     if(!wantConnected){ set('','offline'); return; }
-    if(fastDrops>=3) log('','→ move closer, or the scooter may have gone to sleep');
     while(wantConnected&&retry<12){
       retry++;
       const wait=Math.min(600*Math.pow(1.55,retry-1)+fastDrops*800,8000);
@@ -529,8 +568,7 @@ async function harvest(){
     if(slow())await sleep(60);
   }
   $('#idStats').innerHTML=stats.map(([k,v])=>`<div class="stat"><u>${k}</u><b>${v||'–'}</b></div>`).join('');
-  const typed=$('#code').value.trim().toUpperCase();
-  showCode(typed||guess);
+  showCode($('#code').value.trim().toUpperCase()||guess);
   busy=false;
 }
 
@@ -606,6 +644,102 @@ $('#copy').onclick=()=>{
 };
 $('#target').onclick=()=>{targetMode=(targetMode+1)%3;
   $('#target').textContent='Target: '+['auto','pipe','all'][targetMode];};
+
+/* ============ firmware ============ */
+let fwTune=null,fwTuneName='',fwStock=null,fwStockName='';
+const fwStat=t=>$('#fwStat').textContent=t;
+const fwPct=p=>$('#fwBar').style.width=Math.max(0,Math.min(100,p*100)).toFixed(1)+'%';
+
+async function loadFile(input){
+  const f=input.files&&input.files[0];
+  if(!f)return null;
+  const b=new Uint8Array(await f.arrayBuffer());
+  log('','image loaded: '+f.name+' — '+b.length+' bytes');
+  return b;
+}
+$('#fwTune').onchange=async()=>{
+  fwTune=await loadFile($('#fwTune'));
+  if(fwTune) fwTuneName=$('#fwTune').files[0].name;
+  fwStat(fwTune?(fwTuneName+' · '+fwTune.length+' B'):'idle');
+};
+$('#fwStock').onchange=async()=>{
+  fwStock=await loadFile($('#fwStock'));
+  if(fwStock) fwStockName=$('#fwStock').files[0].name;
+  fwStat(fwStock?(fwStockName+' · '+fwStock.length+' B'):'idle');
+};
+
+function cs16(b,kind){
+  if(kind==='none')return [0,0];
+  if(kind==='crc'){
+    let c=0xFFFF;
+    for(const x of b){ c^=x; for(let i=0;i<8;i++) c=(c&1)?((c>>>1)^0xA001):(c>>>1); }
+    return [c&0xFF,(c>>>8)&0xFF];
+  }
+  let s=0; for(const x of b) s=(s+x)&0xFFFF;
+  if(kind==='inv') s=(0xFFFF-s)&0xFFFF;
+  return [s&0xFF,s>>8];
+}
+
+async function doFlash(bytes,label){
+  if(flashing){ log('','already flashing'); return; }
+  if(!bytes||!bytes.length){ log('','no image loaded'); return; }
+  if(!dev||!dev.gatt.connected){ log('','not connected'); return; }
+  flashing=true; busy=true;
+  const CHUNK=+$('#fwChunk').value, kind=$('#fwCs').value;
+  const total=Math.ceil(bytes.length/CHUNK);
+  fwStat('flashing '+label); fwPct(0);
+  log('','=== FLASH '+label+' — '+bytes.length+' B, '+total+' chunks of '+CHUNK+' B ===');
+  log('','=== do not lock the screen or leave the app ===');
+  try{ await keepAwake(); }catch(e){}
+  const t0=Date.now();
+  try{
+    await send(frame(0x07,0,[bytes.length&255,(bytes.length>>8)&255,
+      (bytes.length>>16)&255,(bytes.length>>24)&255]),true);
+    await sleep(250);
+    let idx=0;
+    for(let off=0;off<bytes.length;off+=CHUNK){
+      await send(frame(0x08,idx&0xFF,[...bytes.slice(off,off+CHUNK)]),true);
+      idx++;
+      if(idx%16===0){
+        fwPct(off/bytes.length);
+        fwStat('writing '+Math.round(off/bytes.length*100)+'%  ('+idx+'/'+total+')');
+      }
+    }
+    fwPct(0.98); fwStat('finishing…');
+    await send(frame(0x09,0,cs16(bytes,kind)),true);
+    await sleep(400);
+    fwPct(1);
+    const secs=((Date.now()-t0)/1000).toFixed(0);
+    fwStat('done in '+secs+'s — rebooting');
+    log('','=== flash finished in '+secs+'s, sending reboot ===');
+    await send(frame(0x0A,0,[]),true);
+    beep(1200);
+  }catch(e){
+    log('','FLASH FAILED: '+e.message);
+    fwStat('failed — old firmware usually still intact');
+  }finally{
+    flashing=false; busy=false;
+  }
+}
+$('#fwTuneGo').onclick =()=>doFlash(fwTune,fwTuneName||'tune');
+$('#fwStockGo').onclick=()=>doFlash(fwStock,fwStockName||'stock');
+
+$('#fwInfo').onclick=async()=>{
+  fwStat('reading…');
+  const fw=await readRegA(0x1A), sn=await readRegA(0x10,14), magic=await readRegA(0x00);
+  const snTxt=(()=>{let s='';try{s=asc(new Uint8Array([sn&255,sn>>8]));}catch(e){}
+    return sn===null?'–':('0x'+(sn>>>0).toString(16).toUpperCase());})();
+  fwStat('fw '+(fw===null?'?':fw)+' · magic '+(magic===null?'?':'0x'+(magic>>>0).toString(16).toUpperCase()));
+  log('','ESC info — magic '+(magic===null?'none':'0x'+(magic>>>0).toString(16))+
+    ' · fw ver '+(fw===null?'none':fw)+' · sn reg '+(sn===null?'none':snTxt));
+  if(fw!==null){
+    const rec={name:dev&&dev.name,at:new Date().toISOString(),fw,magic};
+    try{ const a=JSON.parse(localStorage.getItem('lf_esc')||'[]'); a.push(rec);
+      localStorage.setItem('lf_esc',JSON.stringify(a.slice(-40))); }catch(e){}
+    log('','saved to ESC history');
+  }
+};
+$('#fwReboot').onclick=()=>send(frame(0x0A,0,[]));
 
 /* ============ tuning ============ */
 const cap=$('#cap');
