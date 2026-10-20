@@ -13,7 +13,7 @@
 :root{
   --bg:#0b0f0a; --panel:#141a12; --panel2:#1b2318; --line:#2b3724;
   --fg:#e9f3e3; --dim:#95a68b; --accent:#a6ff4d; --accent2:#79d321;
-  --danger:#ff6b60; --ok:#3ddc84; --warn:#ffc247;
+  --danger:#ff6b60; --ok:#3ddc84;
 }
 *{box-sizing:border-box}
 html,body{margin:0}
@@ -22,233 +22,304 @@ body{
   color:var(--fg); -webkit-text-size-adjust:100%;
   font:16px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
   padding:16px 14px calc(28px + env(safe-area-inset-bottom));
-  max-width:740px; margin:0 auto;
+  max-width:560px; margin:0 auto;
 }
-header{display:flex;align-items:center;gap:10px;margin:4px 0 16px}
-h1{font-size:20px;margin:0;letter-spacing:-.3px;flex:1}
+header{display:flex;align-items:center;gap:10px;margin:2px 0 14px}
+h1{font-size:19px;margin:0;letter-spacing:-.3px;flex:1}
 .pill{font-size:11px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;
   padding:5px 9px;border-radius:99px;border:1px solid var(--line);color:var(--dim);white-space:nowrap}
 .pill.on{color:#0b0f0a;background:var(--accent);border-color:var(--accent)}
-.pill.warn{color:var(--warn);border-color:#5a4a1e}
 .card{background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line);
   border-radius:16px;padding:14px;margin-bottom:12px}
-.card h2{font-size:12px;letter-spacing:1.2px;text-transform:uppercase;color:var(--dim);margin:0 0 10px}
+.card h2{font-size:12px;letter-spacing:1.2px;text-transform:uppercase;color:var(--dim);margin:0 0 12px}
 label{display:block;font-size:12px;color:var(--dim);margin:0 0 10px}
-select,input[type=text],input[type=number],textarea{
-  width:100%;margin-top:5px;background:#0d120b;color:var(--fg);border:1px solid var(--line);
-  border-radius:10px;padding:10px 11px;font-size:16px;font-family:inherit;-webkit-appearance:none;appearance:none}
-select{background-image:linear-gradient(45deg,transparent 50%,var(--dim) 50%),linear-gradient(135deg,var(--dim) 50%,transparent 50%);
-  background-position:calc(100% - 17px) 50%,calc(100% - 12px) 50%;background-size:5px 5px,5px 5px;background-repeat:no-repeat}
-textarea{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:14px;resize:vertical}
-input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent2)}
-.row{display:flex;gap:10px}
+input[type=text]{width:100%;margin-top:5px;background:#0d120b;color:var(--fg);border:1px solid var(--line);
+  border-radius:10px;padding:9px 11px;font-size:16px;font-family:ui-monospace,Menlo,monospace;
+  -webkit-appearance:none;appearance:none;text-transform:uppercase}
+input[type=text]:focus{outline:none;border-color:var(--accent2)}
+input[type=range]{width:100%;margin:6px 0 0;accent-color:var(--accent2);height:26px}
+.row{display:flex;gap:9px}
 .row>*{flex:1}
 button{font:inherit;font-weight:650;border-radius:12px;border:1px solid var(--line);
-  background:#1a2316;color:var(--fg);padding:13px 14px;cursor:pointer;transition:.12s;
+  background:#1a2316;color:var(--fg);padding:12px;cursor:pointer;transition:.12s;
   -webkit-tap-highlight-color:transparent}
 button:active{transform:scale(.985)}
-button:disabled{opacity:.4;cursor:default}
+button:disabled{opacity:.35}
 button.primary{background:linear-gradient(180deg,var(--accent),var(--accent2));color:#0b0f0a;border-color:transparent}
-button.ghost{background:transparent}
-button.danger{color:var(--danger)}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.grid button.big{padding:18px 12px;font-size:16px}
-.hint{font-size:12px;color:var(--dim);margin:10px 0 0;line-height:1.5}
+button.ghost{background:transparent;color:var(--dim)}
+button.xl{padding:18px;font-size:17px}
+button.big{padding:16px 10px;font-size:15px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.hint{font-size:11.5px;color:var(--dim);margin:11px 0 0;line-height:1.5}
 .hint code{background:#0d120b;padding:1px 5px;border-radius:5px;font-size:11px}
-.check{display:flex;align-items:center;gap:9px;font-size:14px;color:var(--fg);margin:12px 0 0}
-.check input{width:20px;height:20px;margin:0;accent-color:var(--accent2)}
-details.card{padding:0}
-details.card>summary{padding:14px;cursor:pointer;font-size:12px;letter-spacing:1.2px;
-  text-transform:uppercase;color:var(--dim);list-style:none}
-details.card>summary::-webkit-details-marker{display:none}
-details.card>summary::before{content:"▸ ";color:var(--accent2)}
-details.card[open]>summary::before{content:"▾ "}
-.dbody{padding:0 14px 14px}
-table{width:100%;border-collapse:collapse;font-size:11px;font-family:ui-monospace,Menlo,monospace}
-th,td{text-align:left;padding:5px 6px;border-bottom:1px solid var(--line);word-break:break-all;vertical-align:top}
-th{color:var(--dim);font-weight:600;font-size:10px;letter-spacing:.5px;text-transform:uppercase}
-td.p{color:var(--accent2);font-size:10px}
-#log{height:230px;overflow:auto;background:#080b07;border:1px solid var(--line);border-radius:10px;
-  padding:9px;font:12px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;-webkit-overflow-scrolling:touch}
-.logline{display:flex;gap:8px;word-break:break-all}
-.logline .t{color:#4a5a42;flex:none}
-.logline.tx .m{color:var(--accent)}
-.logline.rx .m{color:#6cc7ff}
-.logline.err .m{color:var(--danger)}
-.logline.ok .m{color:var(--ok)}
-.logline.warn .m{color:var(--warn)}
-.logline.dim .m{color:var(--dim)}
-.banner{font-size:12px;background:#20301a;border:1px solid #375226;color:#cfe9bf;
-  padding:9px 11px;border-radius:10px;margin-bottom:12px}
-.sep{height:1px;background:var(--line);margin:14px 0}
-.mini{font-size:11px}
-.res{font-family:ui-monospace,Menlo,monospace;font-size:13px;color:var(--accent);word-break:break-all;margin-top:8px}
+.spd{display:flex;align-items:baseline;gap:7px;font-size:13px;color:var(--fg)}
+.spd b{font-size:22px;color:var(--accent);font-variant-numeric:tabular-nums}
+.sep{height:1px;background:var(--line);margin:13px 0}
+#log{height:150px;overflow:auto;background:#080b07;border:1px solid var(--line);border-radius:10px;
+  padding:9px;font:11.5px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace;-webkit-overflow-scrolling:touch}
+.ln{display:flex;gap:8px;word-break:break-all}
+.ln .t{color:#485840;flex:none}
+.ln.tx .m{color:var(--accent)}
+.ln.rx .m{color:#6cc7ff}
+.ln.err .m{color:var(--danger)}
+.ln.ok .m{color:var(--ok)}
+.ln.dim .m{color:var(--dim)}
 </style>
 </head>
 <body>
 
 <header>
   <h1>🛴 Lime Unlocker</h1>
-  <div id="status" class="pill">disconnected</div>
+  <div id="status" class="pill">off</div>
 </header>
 
 <section class="card">
-  <h2>1 · Connect</h2>
-  <label>Device filter
-    <select id="filterMode">
-      <option value="lime">Devices named “lime-…” (recommended)</option>
-      <option value="all">All Bluetooth LE devices</option>
-    </select>
-  </label>
-  <label id="prefixWrap">Name prefix
-    <input id="prefix" type="text" value="lime" autocapitalize="off" autocorrect="off" spellcheck="false" />
+  <button id="btnConnect" class="primary xl">Connect</button>
+  <div class="grid" style="margin-top:10px">
+    <button id="btnUnlock" class="primary big" disabled>Unlock</button>
+    <button id="btnLock" class="big" disabled>Lock</button>
+    <button id="btnBeep" class="big" disabled>Beep</button>
+    <button id="btnDisconnect" class="big ghost" disabled>Disconnect</button>
+  </div>
+</section>
+
+<section class="card">
+  <h2>Tune</h2>
+  <label>
+    <div class="spd"><span>Speed limit</span><b id="spdVal">25</b><span>km/h</span></div>
+    <input id="spd" type="range" min="5" max="30" step="1" value="25" disabled />
   </label>
   <div class="row">
-    <button id="btnConnect" class="primary">Connect</button>
-    <button id="btnDisconnect" class="ghost" disabled>Disconnect</button>
+    <label class="mini" style="flex:1">Register <input id="spdReg" type="text" value="0D" /></label>
+    <button id="btnSpd" class="ghost" style="flex:.8;align-self:flex-end;margin-bottom:10px" disabled>Apply</button>
   </div>
-  <p class="hint">On iPhone, open this page in <b>Bluefy</b>. Tap Connect → pick your scooter from the list.</p>
-</section>
 
-<section class="card" id="targetCard" hidden>
-  <h2>2 · Target</h2>
-  <label>Write characteristic <select id="writeSel"></select></label>
-  <label>Notify characteristic <select id="notifySel"></select></label>
+  <div class="sep"></div>
+
   <div class="row">
-    <label class="mini">Write mode
-      <select id="writeMode">
-        <option value="resp">With response</option>
-        <option value="noresp">Without response</option>
-      </select>
-    </label>
-    <label class="mini">Chunk bytes <input id="chunk" type="number" min="1" max="244" value="20" /></label>
+    <button id="btnBlink" class="ghost" disabled>Blink light</button>
+    <button id="btnRead" class="ghost" disabled>Read register</button>
+  </div>
+  <label class="mini" style="margin-top:10px">Read register # <input id="readReg" type="text" value="0D" /></label>
+
+  <div class="sep"></div>
+
+  <label class="mini">Custom frame — cmd <input id="cCmd" type="text" value="1663" /></label>
+  <label class="mini">payload (hex, optional) <input id="cPay" type="text" placeholder="F1" /></label>
+  <button id="btnCustom" class="ghost" disabled>Send frame</button>
+
+  <p class="hint">Frames are built as <code>46 43 · cmd · len · payload · CRC16</code> with CRC-16/XMODEM — checksum is appended for you.</p>
+</section>
+
+<section class="card">
+  <h2>Log</h2>
+  <div id="log"></div>
+  <div class="row" style="margin-top:8px">
+    <button id="btnClear" class="ghost">Clear</button>
   </div>
 </section>
 
-<section class="card" id="actionCard" hidden>
-  <h2>3 · Unlock</h2>
-  <label>Protocol
-    <select id="protocol">
-      <option value="auto">Auto — try every known format</option>
-      <option value="ascii">App ASCII (ESP32 / custom IoT firmware)</option>
-      <option value="hex">Controller HEX (UART-level)</option>
-      <option value="at">AT command (stock Lime IoT)</option>
-    </select>
-  </label>
-  <div class="grid">
-    <button class="big primary" data-action="unlock">Unlock</button>
-    <button class="big" data-action="lock">Lock</button>
-    <button class="big" data-action="beep">Beep</button>
-    <button class="big" data-action="unlockforever">Unlock forever</button>
-  </div>
-  <label class="check"><input type="checkbox" id="hbOn" /> Send heartbeat every 500&nbsp;ms</label>
-</section>
-
-<details class="card" id="advCard">
-  <summary>Advanced · explorer, custom commands, AT builder, IMEI recovery, log</summary>
-  <div class="dbody">
-
-    <h2>Services &amp; characteristics</h2>
-    <div style="overflow:auto;max-height:220px"><table id="svcTable">
-      <thead><tr><th>Service</th><th>Characteristic</th><th>Properties</th></tr></thead>
-      <tbody></tbody>
-    </table></div>
-
-    <div class="sep"></div>
-
-    <h2>Send raw</h2>
-    <label>Format
-      <select id="fmt">
-        <option value="hex">HEX</option>
-        <option value="ascii">ASCII</option>
-      </select>
-    </label>
-    <label>Payload
-      <input id="raw" type="text" placeholder="464316610001F1F28F" autocapitalize="off" autocorrect="off" spellcheck="false" />
-    </label>
-    <label class="check"><input type="checkbox" id="crlf" /> Append CRLF (ASCII only)</label>
-    <div class="row" style="margin-top:10px">
-      <button id="btnSend" class="primary">Send</button>
-      <button id="btnEcho" class="ghost">Send ×3 (paced)</button>
-    </div>
-
-    <div class="sep"></div>
-
-    <h2>AT command builder</h2>
-    <label class="mini">Password <input id="atPass" type="text" placeholder="TOTP / HMAC token" autocapitalize="off" autocorrect="off" spellcheck="false" /></label>
-    <label class="mini">Time <input id="atTime" type="text" placeholder="auto = now" autocapitalize="off" autocorrect="off" spellcheck="false" /></label>
-    <label class="mini">Data (JSON) <input id="atData" type="text" placeholder='{"command":"unlock"}' autocapitalize="off" autocorrect="off" spellcheck="false" /></label>
-    <p class="hint">Form: <code>AT+type,password,time,sequence,data$</code> — type is ATH / QRY / CMD / DBG.</p>
-
-    <div class="sep"></div>
-
-    <h2>Extra service UUIDs (applies on next connect)</h2>
-    <label><textarea id="extraUuids" rows="3" placeholder="0000abcd-0000-1000-8000-00805f9b34fb&#10;one per line or comma separated"></textarea></label>
-
-    <div class="sep"></div>
-
-    <h2>IMEI recovery (beta)</h2>
-    <p class="hint">The 8 hex digits in the BLE name are the last 4 bytes of DES(IMEI, static key). Feed it the first N digits of your IMEI and it brute-forces the rest.</p>
-    <label class="mini">Scooter BLE name <input id="imeiName" type="text" placeholder="lime-1a2b3c4d" autocapitalize="off" autocorrect="off" spellcheck="false" /></label>
-    <label class="mini">IMEI prefix (digits you know, up to 14) <input id="imeiPrefix" type="text" inputmode="numeric" placeholder="e.g. 86123456" autocapitalize="off" autocorrect="off" spellcheck="false" /></label>
-    <button id="btnImei" class="ghost">Recover IMEI</button>
-    <div id="imeiOut" class="res"></div>
-
-    <div class="sep"></div>
-
-    <h2>Log</h2>
-    <div id="log"></div>
-    <div class="row" style="margin-top:10px">
-      <button id="btnClear" class="ghost">Clear</button>
-      <button id="btnCopy" class="ghost">Copy log</button>
-    </div>
-
-  </div>
-</details>
-
-<p class="hint" style="text-align:center">Works in Bluefy (iOS), Chrome &amp; Edge (desktop / Android). Requires HTTPS.</p>
+<p class="hint" style="text-align:center">Open in Bluefy (iOS), Chrome or Edge. Needs HTTPS.</p>
 
 <script>
 (() => {
 "use strict";
 
-/* ─────────────── elements ─────────────── */
 const $ = s => document.querySelector(s);
 const logEl = $('#log');
-const statusEl = $('#status');
 
-/* ─────────────── candidate GATT services ─────────────── */
-const CANDIDATE_SERVICES = [
-  '6e400001-b5a3-f393-e0a9-e50e24dcca9e', // Nordic UART
-  '0000ffe0-0000-1000-8000-00805f9b34fb', // HM-10 / BT05
+/* services a Lime scooter might expose — auto-discovery does the rest */
+const SERVICES = [
+  '6e400001-b5a3-f393-e0a9-e50e24dcca9e',
+  '0000ffe0-0000-1000-8000-00805f9b34fb',
   '0000ffe5-0000-1000-8000-00805f9b34fb',
-  '0000ffe9-0000-1000-8000-00805f9b34fb',
   '0000fff0-0000-1000-8000-00805f9b34fb',
   '0000ff00-0000-1000-8000-00805f9b34fb',
-  '49535343-fe7d-4ae5-8fa9-9fafd205e455', // Microchip / ISSC transparent UART
+  '49535343-fe7d-4ae5-8fa9-9fafd205e455',
   '0000fee7-0000-1000-8000-00805f9b34fb',
   '0000fee9-0000-1000-8000-00805f9b34fb',
-  '0000fe59-0000-1000-8000-00805f9b34fb',
-  '0000fe95-0000-1000-8000-00805f9b34fb',
-  '0000180a-0000-1000-8000-00805f9b34fb',
-  '0000180f-0000-1000-8000-00805f9b34fb'
+  '0000fe95-0000-1000-8000-00805f9b34fb'
 ];
 
-/* ─────────────── command payloads ─────────────── */
-const ASCII_ACTIONS = { unlock:'unlock', lock:'lock', beep:'alarm', unlockforever:'unlockforever' };
-const HEX_ACTIONS = {
-  unlock:        '464316610001F1F28F',
-  lock:          '464316610001F0E2AE',
-  beep:          '464316130001F15D92',
-  unlockforever: '464316610001F1F28F'
-};
-const HEARTBEAT_HEX = '4643110100084C494D4542494B45BE8A';
-
-/* ─────────────── state ─────────────── */
-let device = null, server = null, writeChar = null, notifyChar = null;
-let hbTimer = null, seq = 0;
-
-/* ─────────────── helpers ─────────────── */
+let device = null, writeChar = null;
+const enc = new TextEncoder();
 const sleep = ms => new Promise(r => setTimeout(r, ms));
-const clamp = (v,a,b) => Math.min(b, Math.max(a,v));
-const toHex = b => Array.from(b).map(x => x.toString(16).padStart(2,'0').toUpperCase()).join
+const toHex = b => Array.from(b).map(x => x.toString(16).padStart(2,'0').toUpperCase()).join(' ');
+const toAscii = b => Array.from(b).map(x => (x>=32 && x<127) ? String.fromCharCode(x) : '.').join('');
+
+/* ── logging ── */
+function log(msg, cls) {
+  const d = document.createElement('div');
+  d.className = 'ln' + (cls ? ' ' + cls : '');
+  const t = document.createElement('span'); t.className = 't';
+  t.textContent = new Date().toTimeString().slice(0,8);
+  const m = document.createElement('span'); m.className = 'm'; m.textContent = msg;
+  d.append(t, m);
+  logEl.append(d);
+  while (logEl.children.length > 300) logEl.firstChild.remove();
+  logEl.scrollTop = logEl.scrollHeight;
+}
+function logBytes(dir, b) {
+  log(`${dir} ${toHex(b)}${b.length <= 40 ? '  |' + toAscii(b) + '|' : ''}`, dir === '>>' ? 'tx' : 'rx');
+}
+
+/* ── frame builder ── */
+function crc16(buf) {
+  let c = 0;
+  for (const b of buf) {
+    c ^= b << 8;
+    for (let i = 0; i < 8; i++)
+      c = (c & 0x8000) ? ((c << 1) ^ 0x1021) & 0xFFFF : (c << 1) & 0xFFFF;
+  }
+  return c;
+}
+function frame(cmd, payload = []) {
+  const n = payload.length;
+  const f = new Uint8Array(8 + n);
+  f[0] = 0x46; f[1] = 0x43;
+  f[2] = (cmd >> 8) & 0xFF; f[3] = cmd & 0xFF;
+  f[4] = (n >> 8) & 0xFF;   f[5] = n & 0xFF;
+  f.set(payload, 6);
+  const c = crc16(f.subarray(0, 6 + n));
+  f[6 + n] = (c >> 8) & 0xFF;
+  f[7 + n] = c & 0xFF;
+  return f;
+}
+function parseHex(s) {
+  const h = (s || '').replace(/0x/gi,'').replace(/[^0-9a-f]/gi,'');
+  if (h.length % 2) throw new Error('odd number of hex digits');
+  const o = new Uint8Array(h.length / 2);
+  for (let i = 0; i < o.length; i++) o[i] = parseInt(h.substr(i*2, 2), 16);
+  return o;
+}
+const hexNum = s => { const v = parseInt((s||'').replace(/[^0-9a-f]/gi,''), 16); return isNaN(v) ? null : v; };
+
+/* ── bluetooth ── */
+async function connect() {
+  if (!navigator.bluetooth) return log('No Web Bluetooth. Use Bluefy or Chrome.', 'err');
+  try {
+    $('#btnConnect').disabled = true;
+    device = await navigator.bluetooth.requestDevice({
+      acceptAllDevices: true,
+      optionalServices: SERVICES
+    });
+    device.addEventListener('gattserverdisconnected', () => {
+      $('#status').className = 'pill'; $('#status').textContent = 'off';
+      setEnabled(false);
+      log('Disconnected.', 'dim');
+    });
+
+    log(`Connecting to ${device.name || 'device'}…`);
+    const server = await device.gatt.connect();
+    $('#status').className = 'pill on';
+    $('#status').textContent = device.name || 'connected';
+
+    let services = [];
+    try { services = await server.getPrimaryServices(); } catch (_) {}
+    if (!services.length)
+      for (const u of SERVICES) { try { services.push(await server.getPrimaryService(u)); } catch (_) {} }
+
+    const writable = [];
+    for (const s of services) {
+      let chars = [];
+      try { chars = await s.getCharacteristics(); } catch (_) { continue; }
+      for (const ch of chars) {
+        const p = ch.properties || {};
+        if (p.notify || p.indicate) {
+          ch.startNotifications().then(() => {
+            ch.addEventListener('characteristicvaluechanged', e => {
+              const v = e.target.value;
+              logBytes('<<', new Uint8Array(v.buffer, v.byteOffset, v.byteLength));
+            });
+          }).catch(() => {});
+        }
+        if (p.write || p.writeWithoutResponse) writable.push(ch);
+      }
+    }
+    writable.sort((a,b) => (b.properties.write ? 1 : 0) - (a.properties.write ? 1 : 0));
+    writeChar = writable[0] || null;
+
+    if (!writeChar) { log('No writable characteristic found.', 'err'); return; }
+    log('Connected. Ready.', 'ok');
+    setEnabled(true);
+  } catch (e) {
+    log('Failed: ' + e.message, 'err');
+  } finally {
+    $('#btnConnect').disabled = false;
+  }
+}
+
+function setEnabled(on) {
+  ['#btnUnlock','#btnLock','#btnBeep','#btnDisconnect','#btnSpd','#btnBlink',
+   '#btnRead','#btnCustom','#spd'].forEach(s => { $(s).disabled = !on; });
+}
+
+async function send(bytes) {
+  if (!writeChar) return;
+  logBytes('>>', bytes);
+  const part = bytes;
+  try {
+    if (writeChar.writeValueWithResponse) await writeChar.writeValueWithResponse(part);
+    else if (writeChar.writeValueWithoutResponse) await writeChar.writeValueWithoutResponse(part);
+    else await writeChar.writeValue(part);
+  } catch (_) {
+    await writeChar.writeValue(part);
+  }
+}
+
+/* ── actions ── */
+const FRAMES = {
+  unlock: () => frame(0x1663, [0xF0]),
+  lock:   () => frame(0x1663, [0xF1]),
+  beep:   () => frame(0x1613, [0xF1])
+};
+const APP = { unlock:'unlock', lock:'lock', beep:'alarm' };
+
+async function action(kind) {
+  if (!writeChar) return;
+  await send(FRAMES[kind]());
+  await sleep(300);
+  await send(enc.encode(APP[kind]));
+}
+
+async function applySpeed() {
+  const kmh = +$('#spd').value;
+  const reg = hexNum($('#spdReg').value);
+  if (reg === null) return log('Bad register.', 'err');
+  await send(frame(0x1600 | (reg & 0xFF), [kmh]));
+  log(`Speed limit → ${kmh} km/h (reg ${reg.toString(16).toUpperCase().padStart(2,'0')})`, 'ok');
+}
+
+async function readRegister() {
+  const reg = hexNum($('#readReg').value);
+  if (reg === null) return log('Bad register.', 'err');
+  await send(frame(0x1100 | (reg & 0xFF)));
+  log(`Read register ${reg.toString(16).toUpperCase().padStart(2,'0')}`, 'dim');
+}
+
+async function sendCustom() {
+  const cmd = hexNum($('#cCmd').value);
+  if (cmd === null) return log('Bad cmd.', 'err');
+  let payload;
+  try { payload = parseHex($('#cPay').value); } catch (e) { return log(e.message, 'err'); }
+  await send(frame(cmd, payload));
+}
+
+/* ── wiring ── */
+$('#btnConnect').onclick = connect;
+$('#btnDisconnect').onclick = () => { try { device.gatt.disconnect(); } catch (_) {} };
+$('#btnUnlock').onclick = () => action('unlock');
+$('#btnLock').onclick = () => action('lock');
+$('#btnBeep').onclick = () => action('beep');
+$('#btnSpd').onclick = applySpeed;
+$('#btnBlink').onclick = () => send(frame(0x1613, [0xF1]));
+$('#btnRead').onclick = readRegister;
+$('#btnCustom').onclick = sendCustom;
+$('#btnClear').onclick = () => { logEl.innerHTML = ''; };
+$('#spd').oninput = e => { $('#spdVal').textContent = e.target.value; };
+
+log('Ready. Tap Connect.');
+})();
+</script>
+</body>
+</html>
