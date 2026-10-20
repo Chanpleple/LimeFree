@@ -1,4 +1,4 @@
-# LimeFree
+# LimeFree OUTDATED
 search the lime scooter that shows up on the available device list, then click connect. then wait until its done. (:
 
 
