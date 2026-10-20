@@ -33,6 +33,7 @@ h1{font-size:19px;margin:0;letter-spacing:-.3px;flex:1}
   border-radius:16px;padding:14px;margin-bottom:12px}
 .card h2{font-size:12px;letter-spacing:1.2px;text-transform:uppercase;color:var(--dim);margin:0 0 12px}
 label{display:block;font-size:12px;color:var(--dim);margin:0 0 10px}
+.mini{font-size:11px}
 input[type=text]{width:100%;margin-top:5px;background:#0d120b;color:var(--fg);border:1px solid var(--line);
   border-radius:10px;padding:9px 11px;font-size:16px;font-family:ui-monospace,Menlo,monospace;
   -webkit-appearance:none;appearance:none;text-transform:uppercase}
@@ -55,7 +56,7 @@ button.big{padding:16px 10px;font-size:15px}
 .spd{display:flex;align-items:baseline;gap:7px;font-size:13px;color:var(--fg)}
 .spd b{font-size:22px;color:var(--accent);font-variant-numeric:tabular-nums}
 .sep{height:1px;background:var(--line);margin:13px 0}
-#log{height:150px;overflow:auto;background:#080b07;border:1px solid var(--line);border-radius:10px;
+#log{height:170px;overflow:auto;background:#080b07;border:1px solid var(--line);border-radius:10px;
   padding:9px;font:11.5px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace;-webkit-overflow-scrolling:touch}
 .ln{display:flex;gap:8px;word-break:break-all}
 .ln .t{color:#485840;flex:none}
@@ -75,7 +76,10 @@ button.big{padding:16px 10px;font-size:15px}
 
 <section class="card">
   <button id="btnConnect" class="primary xl">Connect</button>
-  <div class="grid" style="margin-top:10px">
+  <label class="mini" style="margin-top:10px">Extra service UUIDs (optional)
+    <input id="extra" type="text" placeholder="ffe0 fff0" autocapitalize="off" autocorrect="off" spellcheck="false" />
+  </label>
+  <div class="grid" style="margin-top:4px">
     <button id="btnUnlock" class="primary big" disabled>Unlock</button>
     <button id="btnLock" class="big" disabled>Lock</button>
     <button id="btnBeep" class="big" disabled>Beep</button>
@@ -108,7 +112,7 @@ button.big{padding:16px 10px;font-size:15px}
   <label class="mini">payload (hex, optional) <input id="cPay" type="text" placeholder="F1" /></label>
   <button id="btnCustom" class="ghost" disabled>Send frame</button>
 
-  <p class="hint">Frames are built as <code>46 43 · cmd · len · payload · CRC16</code> with CRC-16/XMODEM — checksum is appended for you.</p>
+  <p class="hint">Frames are <code>46 43 · cmd · len · payload · CRC16</code> — checksum appended automatically.</p>
 </section>
 
 <section class="card">
@@ -128,11 +132,11 @@ button.big{padding:16px 10px;font-size:15px}
 const $ = s => document.querySelector(s);
 const logEl = $('#log');
 
-/* services a Lime scooter might expose — auto-discovery does the rest */
 const SERVICES = [
   '6e400001-b5a3-f393-e0a9-e50e24dcca9e',
   '0000ffe0-0000-1000-8000-00805f9b34fb',
   '0000ffe5-0000-1000-8000-00805f9b34fb',
+  '0000ffe9-0000-1000-8000-00805f9b34fb',
   '0000fff0-0000-1000-8000-00805f9b34fb',
   '0000ff00-0000-1000-8000-00805f9b34fb',
   '49535343-fe7d-4ae5-8fa9-9fafd205e455',
@@ -145,14 +149,14 @@ let device = null, writeChar = null;
 const enc = new TextEncoder();
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const toHex = b => Array.from(b).map(x => x.toString(16).padStart(2,'0').toUpperCase()).join(' ');
-const toAscii = b => Array.from(b).map(x => (x>=32 && x<127) ? String.fromCharCode(x) : '.').join('');
+const toAscii = b => Array.from(b).map(x => (x >= 32 && x < 127) ? String.fromCharCode(x) : '.').join('');
 
 /* ── logging ── */
 function log(msg, cls) {
   const d = document.createElement('div');
   d.className = 'ln' + (cls ? ' ' + cls : '');
   const t = document.createElement('span'); t.className = 't';
-  t.textContent = new Date().toTimeString().slice(0,8);
+  t.textContent = new Date().toTimeString().slice(0, 8);
   const m = document.createElement('span'); m.className = 'm'; m.textContent = msg;
   d.append(t, m);
   logEl.append(d);
@@ -163,7 +167,7 @@ function logBytes(dir, b) {
   log(`${dir} ${toHex(b)}${b.length <= 40 ? '  |' + toAscii(b) + '|' : ''}`, dir === '>>' ? 'tx' : 'rx');
 }
 
-/* ── frame builder ── */
+/* ── CRC-16/XMODEM ── */
 function crc16(buf) {
   let c = 0;
   for (const b of buf) {
@@ -173,6 +177,8 @@ function crc16(buf) {
   }
   return c;
 }
+
+/* ── frame builder: 46 43 cmd(2) len(2) payload crc(2) ── */
 function frame(cmd, payload = []) {
   const n = payload.length;
   const f = new Uint8Array(8 + n);
@@ -185,26 +191,62 @@ function frame(cmd, payload = []) {
   f[7 + n] = c & 0xFF;
   return f;
 }
+
 function parseHex(s) {
-  const h = (s || '').replace(/0x/gi,'').replace(/[^0-9a-f]/gi,'');
+  const h = (s || '').replace(/0x/gi, '').replace(/[^0-9a-f]/gi, '');
   if (h.length % 2) throw new Error('odd number of hex digits');
   const o = new Uint8Array(h.length / 2);
-  for (let i = 0; i < o.length; i++) o[i] = parseInt(h.substr(i*2, 2), 16);
+  for (let i = 0; i < o.length; i++) o[i] = parseInt(h.substr(i * 2, 2), 16);
   return o;
 }
-const hexNum = s => { const v = parseInt((s||'').replace(/[^0-9a-f]/gi,''), 16); return isNaN(v) ? null : v; };
+const hexNum = s => {
+  const t = (s || '').replace(/[^0-9a-f]/gi, '');
+  if (!t) return null;
+  const v = parseInt(t, 16);
+  return isNaN(v) ? null : v;
+};
+function normUuid(u) {
+  u = (u || '').trim().toLowerCase();
+  if (/^[0-9a-f]{4}$/.test(u))  return '0000' + u + '-0000-1000-8000-00805f9b34fb';
+  if (/^[0-9a-f]{8}$/.test(u))  return u + '-0000-1000-8000-00805f9b34fb';
+  return u;
+}
+
+/* ── startup self-test ── */
+(function selfTest() {
+  const vectors = [
+    [frame(0x1114, []),                 '46 43 11 14 00 00 EA FB'],
+    [frame(0x1663, [0xF0]),             '46 43 16 63 00 01 F0 0F C6'],
+    [frame(0x1663, [0xF1]),             '46 43 16 63 00 01 F1 1F E7'],
+    [frame(0x1613, [0xF1]),             '46 43 16 13 00 01 F1 5D 92'],
+    [frame(0x1101, parseHex('4C494D4542494B45')),
+                                        '46 43 11 01 00 08 4C 49 4D 45 42 49 4B 45 BE 8A']
+  ];
+  let pass = 0;
+  const fails = [];
+  for (const [got, want] of vectors) {
+    if (toHex(got) === want) pass++;
+    else fails.push(`${toHex(got)} != ${want}`);
+  }
+  log(`Self-test: ${pass}/${vectors.length} frame vectors ${pass === vectors.length ? 'PASS' : 'FAIL'}`,
+      pass === vectors.length ? 'ok' : 'err');
+  fails.forEach(f => log('  ' + f, 'err'));
+})();
 
 /* ── bluetooth ── */
 async function connect() {
   if (!navigator.bluetooth) return log('No Web Bluetooth. Use Bluefy or Chrome.', 'err');
+
+  const extra = ($('#extra').value || '').split(/[\s,]+/).filter(Boolean).map(normUuid);
+  const optionalServices = [...new Set([...SERVICES, ...extra])];
+
   try {
     $('#btnConnect').disabled = true;
-    device = await navigator.bluetooth.requestDevice({
-      acceptAllDevices: true,
-      optionalServices: SERVICES
-    });
+    device = await navigator.bluetooth.requestDevice({ acceptAllDevices: true, optionalServices });
     device.addEventListener('gattserverdisconnected', () => {
-      $('#status').className = 'pill'; $('#status').textContent = 'off';
+      $('#status').className = 'pill';
+      $('#status').textContent = 'off';
+      writeChar = null;
       setEnabled(false);
       log('Disconnected.', 'dim');
     });
@@ -217,15 +259,17 @@ async function connect() {
     let services = [];
     try { services = await server.getPrimaryServices(); } catch (_) {}
     if (!services.length)
-      for (const u of SERVICES) { try { services.push(await server.getPrimaryService(u)); } catch (_) {} }
+      for (const u of optionalServices) { try { services.push(await server.getPrimaryService(u)); } catch (_) {} }
 
     const writable = [];
+    let notifyCount = 0;
     for (const s of services) {
       let chars = [];
       try { chars = await s.getCharacteristics(); } catch (_) { continue; }
       for (const ch of chars) {
         const p = ch.properties || {};
         if (p.notify || p.indicate) {
+          notifyCount++;
           ch.startNotifications().then(() => {
             ch.addEventListener('characteristicvaluechanged', e => {
               const v = e.target.value;
@@ -236,34 +280,42 @@ async function connect() {
         if (p.write || p.writeWithoutResponse) writable.push(ch);
       }
     }
-    writable.sort((a,b) => (b.properties.write ? 1 : 0) - (a.properties.write ? 1 : 0));
+
+    const score = ch => (SERVICES.includes(ch.service.uuid) ? 2 : 0) + (ch.properties.write ? 1 : 0);
+    writable.sort((a, b) => score(b) - score(a));
     writeChar = writable[0] || null;
 
-    if (!writeChar) { log('No writable characteristic found.', 'err'); return; }
-    log('Connected. Ready.', 'ok');
+    log(`${services.length} service(s), ${writable.length} writable, ${notifyCount} notifying.`, 'dim');
+    if (!writeChar) {
+      log('No writable characteristic — add UUIDs above and reconnect.', 'err');
+      return;
+    }
+    log('Ready.', 'ok');
     setEnabled(true);
   } catch (e) {
     log('Failed: ' + e.message, 'err');
+    $('#status').className = 'pill';
+    $('#status').textContent = 'off';
   } finally {
     $('#btnConnect').disabled = false;
   }
 }
 
 function setEnabled(on) {
-  ['#btnUnlock','#btnLock','#btnBeep','#btnDisconnect','#btnSpd','#btnBlink',
-   '#btnRead','#btnCustom','#spd'].forEach(s => { $(s).disabled = !on; });
+  ['#btnUnlock', '#btnLock', '#btnBeep', '#btnDisconnect', '#btnSpd',
+   '#btnBlink', '#btnRead', '#btnCustom', '#spd'].forEach(s => { $(s).disabled = !on; });
 }
 
 async function send(bytes) {
-  if (!writeChar) return;
+  if (!writeChar) { log('Not connected.', 'err'); return; }
   logBytes('>>', bytes);
-  const part = bytes;
   try {
-    if (writeChar.writeValueWithResponse) await writeChar.writeValueWithResponse(part);
-    else if (writeChar.writeValueWithoutResponse) await writeChar.writeValueWithoutResponse(part);
-    else await writeChar.writeValue(part);
-  } catch (_) {
-    await writeChar.writeValue(part);
+    if (writeChar.writeValueWithResponse) await writeChar.writeValueWithResponse(bytes);
+    else if (writeChar.writeValueWithoutResponse) await writeChar.writeValueWithoutResponse(bytes);
+    else await writeChar.writeValue(bytes);
+  } catch (e) {
+    try { await writeChar.writeValue(bytes); }
+    catch (e2) { log('Write failed: ' + e2.message, 'err'); }
   }
 }
 
@@ -273,10 +325,9 @@ const FRAMES = {
   lock:   () => frame(0x1663, [0xF1]),
   beep:   () => frame(0x1613, [0xF1])
 };
-const APP = { unlock:'unlock', lock:'lock', beep:'alarm' };
+const APP = { unlock: 'unlock', lock: 'lock', beep: 'alarm' };
 
 async function action(kind) {
-  if (!writeChar) return;
   await send(FRAMES[kind]());
   await sleep(300);
   await send(enc.encode(APP[kind]));
@@ -287,14 +338,13 @@ async function applySpeed() {
   const reg = hexNum($('#spdReg').value);
   if (reg === null) return log('Bad register.', 'err');
   await send(frame(0x1600 | (reg & 0xFF), [kmh]));
-  log(`Speed limit → ${kmh} km/h (reg ${reg.toString(16).toUpperCase().padStart(2,'0')})`, 'ok');
+  log(`Speed limit → ${kmh} km/h (reg ${(reg & 0xFF).toString(16).toUpperCase().padStart(2, '0')})`, 'ok');
 }
 
 async function readRegister() {
   const reg = hexNum($('#readReg').value);
   if (reg === null) return log('Bad register.', 'err');
   await send(frame(0x1100 | (reg & 0xFF)));
-  log(`Read register ${reg.toString(16).toUpperCase().padStart(2,'0')}`, 'dim');
 }
 
 async function sendCustom() {
@@ -307,7 +357,7 @@ async function sendCustom() {
 
 /* ── wiring ── */
 $('#btnConnect').onclick = connect;
-$('#btnDisconnect').onclick = () => { try { device.gatt.disconnect(); } catch (_) {} };
+$('#btnDisconnect').onclick = () => { try { if (device && device.gatt.connected) device.gatt.disconnect(); } catch (_) {} };
 $('#btnUnlock').onclick = () => action('unlock');
 $('#btnLock').onclick = () => action('lock');
 $('#btnBeep').onclick = () => action('beep');
